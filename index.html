@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>地方规范查询工具 · 章节标注</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root { --brand:#0B2B5C; --brand-light:#134683; --bg:#F5F6F8; --white:#FFF; --border:#DDE1E6; --text:#333; --text-light:#666; --tag-bg:#E8F0FE; --tag-border:#B8D4FE; --tag-active-bg:#0B2B5C; --tag-active-text:#FFF; --selected:#C6E3FF; }
+body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+.header { background:var(--brand); color:white; padding:12px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+.header h1 { font-size:18px; font-weight:600; }
+.header .stats { font-size:13px; opacity:.85; }
+.header .actions { display:flex; gap:8px; }
+.header .actions button { padding:6px 14px; border:1px solid rgba(255,255,255,.3); border-radius:4px; background:rgba(255,255,255,.1); color:white; cursor:pointer; font-size:13px; }
+.header .actions button:hover { background:rgba(255,255,255,.2); }
+.container { display:flex; height:calc(100vh - 56px); }
+.sidebar { width:240px; background:var(--white); border-right:1px solid var(--border); overflow-y:auto; flex-shrink:0; }
+.sidebar h3 { padding:14px 16px 8px; font-size:13px; color:var(--text-light); text-transform:uppercase; letter-spacing:1px; }
+.city-btn { display:block; width:100%; padding:10px 16px; border:none; background:transparent; text-align:left; cursor:pointer; font-size:14px; border-left:3px solid transparent; transition:.15s; }
+.city-btn:hover { background:#F0F4F8; }
+.city-btn.active { background:var(--selected); border-left-color:var(--brand); font-weight:600; }
+.city-btn .badge { float:right; font-size:11px; background:var(--tag-bg); color:var(--brand); padding:1px 6px; border-radius:10px; }
+.main { flex:1; overflow-y:auto; padding:20px; }
+.city-title { font-size:20px; margin-bottom:4px; }
+.city-meta { font-size:13px; color:var(--text-light); margin-bottom:16px; }
+.file-list { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+.file-tag { font-size:12px; background:#F0F4F8; border:1px solid var(--border); border-radius:4px; padding:4px 10px; }
+.cat-bar { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px; }
+.cat-tag { font-size:12px; padding:4px 10px; border-radius:14px; background:var(--tag-bg); border:1px solid var(--tag-border); cursor:pointer; transition:.15s; white-space:nowrap; }
+.cat-tag:hover { background:#D4E4FC; }
+.cat-tag.active { background:var(--tag-active-bg); color:var(--tag-active-text); border-color:var(--tag-active-bg); }
+.heading-list { }
+.heading-item { display:flex; align-items:flex-start; padding:10px 12px; border-bottom:1px solid var(--border); gap:10px; transition:.15s; }
+.heading-item:hover { background:#FAFBFC; }
+.heading-item.pl1 { padding-left:20px; }
+.heading-item.pl2 { padding-left:36px; }
+.heading-item.pl3 { padding-left:52px; }
+.heading-item.pl4 { padding-left:68px; }
+.heading-level { font-size:11px; color:var(--text-light); min-width:22px; text-align:center; background:#EDEFF2; border-radius:3px; padding:1px 4px; flex-shrink:0; }
+.heading-source { font-size:10px; color:var(--brand-light); background:var(--tag-bg); padding:1px 5px; border-radius:3px; white-space:nowrap; flex-shrink:0; }
+.heading-text { flex:1; font-size:14px; line-height:1.4; }
+.heading-label { font-size:11px; color:var(--text-light); margin-top:2px; font-style:italic; }
+.heading-tags { display:flex; gap:3px; flex-wrap:wrap; min-width:80px; justify-content:flex-end; }
+.tag-dot { font-size:10px; padding:2px 6px; border-radius:8px; background:var(--tag-bg); color:var(--brand); white-space:nowrap; max-width:100px; overflow:hidden; text-overflow:ellipsis; }
+.empty { text-align:center; color:var(--text-light); padding:60px 20px; }
+.empty p { margin:8px 0; }
+.modal { display:none; position:fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,.4); z-index:1000; justify-content:center; align-items:center; }
+.modal.show { display:flex; }
+.modal-box { background:white; border-radius:8px; width:90%; max-width:600px; max-height:70vh; overflow-y:auto; padding:20px; }
+.modal-box h3 { margin-bottom:12px; }
+.modal-box .cat-check { display:flex; flex-wrap:wrap; gap:6px; }
+.modal-box .cat-check label { display:flex; align-items:center; gap:4px; font-size:13px; cursor:pointer; padding:4px 8px; border-radius:4px; background:var(--tag-bg); }
+.modal-box .cat-check label:hover { background:#D4E4FC; }
+.modal-box .cat-check input[type=checkbox] { cursor:pointer; }
+.modal-box .actions { margin-top:16px; display:flex; gap:8px; }
+.modal-box button { padding:8px 16px; border-radius:4px; border:1px solid var(--border); cursor:pointer; font-size:14px; }
+.modal-box .btn-primary { background:var(--brand); color:white; border:none; }
+.modal-box .btn-primary:hover { background:var(--brand-light); }
+.progress-bar { height:4px; background:var(--border); margin:8px 0; border-radius:2px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--brand); transition:width .3s; }
+.legend { display:flex; gap:12px; margin-bottom:12px; font-size:12px; color:var(--text-light); }
+.legend span { display:flex; align-items:center; gap:4px; }
+.legend .dot { width:8px; height:8px; border-radius:50%; }
+.legend .dot.done { background:var(--brand); }
+.legend .dot.partial { background:#FFB020; }
+.legend .dot.empty { border:1.5px solid var(--border); background:white; }
+.save-btn { position:fixed; bottom:20px; right:20px; padding:14px 24px; background:var(--brand); color:white; border:none; border-radius:8px; font-size:15px; cursor:pointer; box-shadow:0 4px 12px rgba(11,43,92,.3); z-index:100; }
+.save-btn:hover { background:var(--brand-light); transform:translateY(-1px); }
+.select-all-bar { display:flex; gap:8px; margin-bottom:8px; }
+.select-all-bar button { font-size:11px; padding:3px 10px; border:1px solid var(--border); border-radius:10px; background:white; cursor:pointer; white-space:nowrap; }
+.select-all-bar button:hover { background:var(--tag-bg); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>地方规范查询工具 · 章节标注</h1>
+    <div class="stats">10城 · <span id="totalHeadings">0</span>条章节 · <span id="taggedCount">0</span>条已标注</div>
+  </div>
+  <div class="actions">
+    <button onclick="exportJSON()">导出 JSON</button>
+    <button onclick="importJSON()">导入 JSON</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="main" id="main">
+    <div class="empty">
+      <p style="font-size:48px;">👈</p>
+      <p>选择左侧城市开始标注</p>
+      <p style="font-size:13px;color:#999;">为每条章节打上23类规范标签</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="tagModal">
+  <div class="modal-box">
+    <h3 id="modalCity">标注章节标签</h3>
+    <p id="modalHeading" style="font-size:14px;margin-bottom:12px;color:var(--text-light);"></p>
+    <div class="cat-check" id="catCheckboxes"></div>
+    <div class="actions">
+      <button class="btn-primary" onclick="saveTags()">保存</button>
+      <button onclick="closeModal()">取消</button>
+    </div>
+  </div>
+</div>
+
+<button class="save-btn" onclick="saveToStorage()">💾 保存进度</button>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const CATEGORIES = [{"id": "cat01", "label": "01 用地规划指标", "group": "规划", "desc": "M1/M2/M3分类,容积率,建筑密度,限高"}, {"id": "cat02", "label": "02 工业用地绿地率", "group": "规划", "desc": "绿地率是上限还是下限控制"}, {"id": "cat03", "label": "03 计容面积规则", "group": "规划", "desc": "双倍计容,核增核减,架空层/阳台"}, {"id": "cat04", "label": "04 配套用房占比", "group": "规划", "desc": "行政办公及生活设施:用地占比+计容占比"}, {"id": "cat05", "label": "05 车位配建", "group": "规划", "desc": "机动车/非机动车配建,地面地下比例"}, {"id": "cat06", "label": "06 日照要求", "group": "规划", "desc": "学校/住宅/养老/公寓日照标准"}, {"id": "cat07", "label": "07 建筑间距", "group": "规划", "desc": "非住宅间距+工业建筑间距(是否引用国标消防)"}, {"id": "cat08", "label": "08 连续面宽", "group": "规划", "desc": "面宽控制要求"}, {"id": "cat09", "label": "09 建筑物退让", "group": "规划", "desc": "退界/退道路/退河道/退绿化/退高压线"}, {"id": "cat10", "label": "10 地下建筑退让", "group": "规划", "desc": "地下空间退界要求"}, {"id": "cat11", "label": "11 海绵城市", "group": "规划", "desc": "是否强制,年径流总量控制率"}, {"id": "cat12", "label": "12 市政配套费", "group": "规划", "desc": "大市政配套费单价"}, {"id": "cat13", "label": "13 产业扶持", "group": "规划", "desc": "土地出让金,工业上楼政策导向"}, {"id": "cat14", "label": "14 消防规范", "group": "建筑", "desc": "高度梯度(24/32/50/60m),丙类/丁戊类"}, {"id": "cat15", "label": "15 装配式建筑", "group": "结构", "desc": "预制率/装配率最低要求,构件类型"}, {"id": "cat16", "label": "16 供电标准", "group": "机电", "desc": "各业态用电负荷指标(W/㎡)"}, {"id": "cat17", "label": "17 土地出让年限与方式", "group": "政策", "desc": "50年/弹性年期/长期租赁"}, {"id": "cat18", "label": "18 分割转让政策", "group": "政策", "desc": "能否分割,最小单元,受让方门槛"}, {"id": "cat19", "label": "19 工业上楼专项", "group": "政策", "desc": "上楼政策,鼓励门类,容积率底线"}, {"id": "cat20", "label": "20 低效用地再开发", "group": "政策", "desc": "存量盘活,用途转换"}, {"id": "cat21", "label": "21 招商准入门槛", "group": "政策", "desc": "亩均税收/投资强度,产业目录"}, {"id": "cat22", "label": "22 税收返还/优惠", "group": "政策", "desc": "企所税减免,增值税返还,人才补贴"}, {"id": "cat23", "label": "23 环评/安评特殊要求", "group": "政策", "desc": "特殊行业准入,排放标准,防护距离"}];
+const CITIES_DATA = {"上海": {"region": "长三角", "files": [{"name": "上海市城市规划管理技术规定(土地使用建筑管理)", "pages": 34, "size_kb": 852}, {"name": "上海市建筑面积计算规划管理规定", "pages": 10, "size_kb": 402}], "headings": [{"id": "sh_001", "title": "第一章 总则", "level": 2, "source": "主规", "label": "定义建筑控制线,建筑间距,建筑退让等术语"}, {"id": "sh_002", "title": "第二章 建设用地区划分类和适建范围", "level": 2, "source": "主规", "label": "用地分类及适建范围表(附表二)"}, {"id": "sh_003", "title": "第一节 建筑容量控制指标", "level": 3, "source": "主规", "label": "容积率,建筑密度控制指标(表一,表二);工业建筑容积率上限控制"}, {"id": "sh_004", "title": "第二节 建筑间距", "level": 3, "source": "主规", "label": "居住/非居住建筑间距,按高度分档;工业建筑参考消防间距"}, {"id": "sh_005", "title": "第三节 建筑物退让", "level": 3, "source": "主规", "label": "退道路红线/用地边界;临街建筑退让;地下建筑退让"}, {"id": "sh_006", "title": "第四节 建筑物的高度控制", "level": 3, "source": "主规", "label": "建筑限高;沿城市道路两侧建筑高度控制"}, {"id": "sh_007", "title": "第五节 建筑基地绿地", "level": 3, "source": "主规", "label": "绿地率指标(各地块类型)"}, {"id": "sh_008", "title": "第六节 建筑基地附属设施", "level": 3, "source": "主规", "label": "停车位配建标准;基地出入口"}, {"id": "sh_009", "title": "第四章 特定区域", "level": 2, "source": "主规", "label": "历史文化风貌区/黄浦江/苏州河等特殊规定"}, {"id": "sh_010", "title": "第五章 附则", "level": 2, "source": "主规", "label": ""}, {"id": "sh_011", "title": "附录一 名词解释", "level": 4, "source": "主规", "label": ""}, {"id": "sh_012", "title": "附录二 建筑间距和离界距离图示", "level": 4, "source": "主规", "label": ""}, {"id": "sh_013", "title": "上海市建筑面积计算规划管理规定 全文", "level": 4, "source": "计容规则", "label": "建筑面积计算规则;半计容/不计容情形"}, {"id": "sh_014", "title": "停车配建标准 DG TJ 08-7-2021", "level": 4, "source": "停车标准", "label": "各业态停车位配建指标(独立标准)"}]}, "深圳": {"region": "华南", "files": [{"name": "深圳市城市规划标准与准则(2019)", "pages": 186, "size_kb": 7523}, {"name": "深圳市建筑设计规则(2024修订)", "pages": 62, "size_kb": 871}, {"name": "深圳市光明区工业上楼建筑设计指南", "pages": 127, "size_kb": 1751}, {"name": "深圳市建筑设计面积计算解释", "pages": 61, "size_kb": 1865}], "headings": [{"id": "sz_001", "title": "第一章 总则", "level": 2, "source": "深标2019", "label": "术语定义,适用范围"}, {"id": "sz_002", "title": "第二章 建设用地", "level": 2, "source": "深标2019", "label": ""}, {"id": "sz_003", "title": "第2.1 用地分类", "level": 3, "source": "深标2019", "label": "M0,M1等新型产业用地分类"}, {"id": "sz_004", "title": "第2.2 地块容积率", "level": 3, "source": "深标2019", "label": "密度分区(1-5区)的容积率引导"}, {"id": "sz_005", "title": "第2.3 建筑密度与绿地率", "level": 3, "source": "深标2019", "label": "各类用地建筑密度上限,绿地率下限"}, {"id": "sz_006", "title": "第三章 建筑管理", "level": 2, "source": "深标2019", "label": ""}, {"id": "sz_007", "title": "第3.1 建筑间距", "level": 3, "source": "深标2019", "label": "住宅/非住宅间距,通风/消防要求"}, {"id": "sz_008", "title": "第3.2 建筑退让", "level": 3, "source": "深标2019", "label": "退道路红线/用地红线;地下建筑退让"}, {"id": "sz_009", "title": "第3.3 建筑高度", "level": 3, "source": "深标2019", "label": "建筑限高;航空限高"}, {"id": "sz_010", "title": "第四章 市政工程", "level": 2, "source": "深标2019", "label": ""}, {"id": "sz_011", "title": "第4.1 交通设施", "level": 3, "source": "深标2019", "label": "停车配建标准(独立表格);公交场站"}, {"id": "sz_012", "title": "第4.2 给排水/电力/燃气/通信", "level": 3, "source": "深标2019", "label": "市政管线综合"}, {"id": "sz_013", "title": "第五章 城市设计", "level": 2, "source": "深标2019", "label": "滨水/临山地区管控"}, {"id": "sz_014", "title": "第八章 附则", "level": 2, "source": "深标2019", "label": "附则及名词解释"}, {"id": "sz_015", "title": "深圳市建筑设计规则2024 全文", "level": 4, "source": "建筑规则", "label": "建筑间距/退让/日照/面宽/消防通道等设计细则"}, {"id": "sz_016", "title": "光明区工业上楼建筑设计指南 全文", "level": 4, "source": "上楼指南", "label": "荷载/层高/垂直交通/柱网/吊装口等上楼参数"}, {"id": "sz_017", "title": "建筑面积计算解释 全文", "level": 4, "source": "面积解释", "label": "核增核减面积计算规则(架空层/避难层/设备房等)"}, {"id": "sz_018", "title": "深圳市工业区块线管理办法", "level": 4, "source": "政策", "label": "区块线内M1/M0管控要求"}]}, "广州": {"region": "华南", "files": [{"name": "广州市城市规划管理技术规定", "pages": 60, "size_kb": 1604}, {"name": "广州市建设项目停车泊位配建指标表", "pages": 4, "size_kb": 99}], "headings": [{"id": "gz_001", "title": "第一章 总则", "level": 2, "source": "主规", "label": ""}, {"id": "gz_002", "title": "第二章 建设用地规划管理", "level": 2, "source": "主规", "label": "用地分类;容积率/建筑密度/绿地率指标"}, {"id": "gz_003", "title": "第三章 建筑工程规划管理", "level": 2, "source": "主规", "label": ""}, {"id": "gz_004", "title": "第一节 建筑间距", "level": 3, "source": "主规", "label": "各类建筑间距规定"}, {"id": "gz_005", "title": "第二节 建筑退让", "level": 3, "source": "主规", "label": "退道路/用地红线;地下建筑退让"}, {"id": "gz_006", "title": "第三节 建筑高度与面宽", "level": 3, "source": "主规", "label": "限高;连续面宽控制"}, {"id": "gz_007", "title": "第四节 日照分析", "level": 3, "source": "主规", "label": "居住/教育/医疗类建筑日照标准"}, {"id": "gz_008", "title": "第四章 市政设施与管线", "level": 2, "source": "主规", "label": "停车配建,配电,海绵城市"}, {"id": "gz_009", "title": "第五章 附则", "level": 2, "source": "主规", "label": ""}, {"id": "gz_010", "title": "附录 计容建筑面积计算规则", "level": 4, "source": "主规", "label": "层高折算/阳台/地下空间等计容规则"}, {"id": "gz_011", "title": "停车泊位配建指标表 全文", "level": 4, "source": "停车标准", "label": "各业态机动车/非机动车配建标准"}, {"id": "gz_012", "title": "广州市工业区块线管理办法", "level": 4, "source": "政策", "label": "区块线内工业用地管控;容积率/分割转让"}]}, "杭州": {"region": "长三角", "files": [{"name": "杭州市城市规划管理技术规定(2022修订)", "pages": 52, "size_kb": 1940}, {"name": "杭州市停车场(库)设置规则补充实施细则", "pages": 6, "size_kb": 3324}], "headings": [{"id": "hz_001", "title": "第一章 总则", "level": 2, "source": "主规", "label": ""}, {"id": "hz_002", "title": "第二章 建设用地规划管理", "level": 2, "source": "主规", "label": "用地分类;工业用地容积率(取下限控制)"}, {"id": "hz_003", "title": "第三章 建筑工程规划管理", "level": 2, "source": "主规", "label": ""}, {"id": "hz_004", "title": "第一节 建筑间距", "level": 3, "source": "主规", "label": "按建筑类型和高度分档;工业建筑间距规定"}, {"id": "hz_005", "title": "第二节 建筑退让", "level": 3, "source": "主规", "label": "退道路红线/用地边界;地下建筑退让"}, {"id": "hz_006", "title": "第三节 建筑高度", "level": 3, "source": "主规", "label": "限高控制;航空限高;西湖景观控制"}, {"id": "hz_007", "title": "第四节 建筑面宽", "level": 3, "source": "主规", "label": "连续面宽限制"}, {"id": "hz_008", "title": "第五节 日照分析", "level": 3, "source": "主规", "label": "住宅/教育/养老日照标准"}, {"id": "hz_009", "title": "第四章 城市交通工程", "level": 2, "source": "主规", "label": "停车配建(引用浙江省停车场标准)"}, {"id": "hz_010", "title": "第五章 市政公用设施", "level": 2, "source": "主规", "label": "供电/海绵/市政管线"}, {"id": "hz_011", "title": "第六章 城市防灾", "level": 2, "source": "主规", "label": "消防/防洪/抗震"}, {"id": "hz_012", "title": "第七章 附则", "level": 2, "source": "主规", "label": ""}, {"id": "hz_013", "title": "附录一 计容建筑面积计算规则", "level": 4, "source": "主规", "label": "层高折算/架空层/地下室计容规则"}, {"id": "hz_014", "title": "附录二 停车位配建标准", "level": 4, "source": "主规", "label": "引用浙标停车配建;杭州补充细则"}, {"id": "hz_015", "title": "附录三 日照间距系数表", "level": 4, "source": "主规", "label": ""}, {"id": "hz_016", "title": "杭州市停车场补充实施细则 全文", "level": 4, "source": "停车细则", "label": "杭州特有停车位配建调整条款"}]}, "苏州": {"region": "长三角", "files": [{"name": "江苏省城市规划管理技术规定(2025版)", "pages": 72, "size_kb": 1776}, {"name": "苏州市实施细则:指标核定规则(2018)", "pages": 26, "size_kb": 3845}, {"name": "苏州市实施细则:日照分析规则(2018)", "pages": 10, "size_kb": 1268}], "headings": [{"id": "su_001", "title": "第一章 总则", "level": 2, "source": "省规2025", "label": ""}, {"id": "su_002", "title": "第二章 建设用地规划管理", "level": 2, "source": "省规2025", "label": ""}, {"id": "su_003", "title": "§2.5.4 工业用地容积率", "level": 3, "source": "省规2025", "label": "苏南≥1.5/苏中≥1.2/苏北≥1.0(下限控制)"}, {"id": "su_004", "title": "§2.5.5 工业建筑密度/绿地率", "level": 3, "source": "省规2025", "label": "建筑密度一般≥40%;绿地率执行国家/省标准"}, {"id": "su_005", "title": "§2.6 计容建筑面积计算", "level": 3, "source": "省规2025", "label": "层高超限折算;架空层/地下室计容规则"}, {"id": "su_006", "title": "§2.7 配套设施规划", "level": 3, "source": "省规2025", "label": "工业项目行政办公及生活服务设施占比"}, {"id": "su_007", "title": "第三章 建筑工程规划管理", "level": 2, "source": "省规2025", "label": ""}, {"id": "su_008", "title": "§3.2 建筑间距", "level": 3, "source": "省规2025", "label": "按建筑类型×高度×城市气候区划分档"}, {"id": "su_009", "title": "§3.2.10.2 工业建筑间距", "level": 3, "source": "省规2025", "label": "明确:按消防/安全间距控制(引用国标)"}, {"id": "su_010", "title": "§3.3 建筑退让", "level": 3, "source": "省规2025", "label": "退道路红线/用地/河道;地下建筑退让"}, {"id": "su_011", "title": "§3.4 建筑面宽", "level": 3, "source": "省规2025", "label": "连续面宽控制(按建筑类型和城市位置)"}, {"id": "su_012", "title": "§3.5 日照分析", "level": 3, "source": "省规2025", "label": "住宅/教育/养老日照标准;各城市日照系数表"}, {"id": "su_013", "title": "第四章 城市交通设施", "level": 2, "source": "省规2025", "label": "停车位配建标准"}, {"id": "su_014", "title": "第五章 市政公用设施", "level": 2, "source": "省规2025", "label": "供电/给排水/海绵城市"}, {"id": "su_015", "title": "第六章 城市安全韧性", "level": 2, "source": "省规2025", "label": "消防/防洪/抗震/地质灾害"}, {"id": "su_016", "title": "第七章 附则", "level": 2, "source": "省规2025", "label": ""}, {"id": "su_017", "title": "苏州指标核定细则(2018) 全文", "level": 4, "source": "苏州细则1", "label": "苏州特殊计容面积核定规则"}, {"id": "su_018", "title": "苏州日照分析细则(2018) 全文", "level": 4, "source": "苏州细则2", "label": "苏州日照间距系数=1.30;方位角折减系数"}]}, "郑州": {"region": "北方", "files": [{"name": "郑州市城市规划管理技术规定(2024版)", "pages": 205, "size_kb": 11495}], "headings": [{"id": "zz_001", "title": "第一章 总则", "level": 2, "source": "主规2024", "label": ""}, {"id": "zz_002", "title": "第二章 建设用地规划管理", "level": 2, "source": "主规2024", "label": "工业用地容积率/密度/绿地率指标"}, {"id": "zz_003", "title": "第三章 建筑工程规划管理", "level": 2, "source": "主规2024", "label": "建筑间距/退让/面宽/日照"}, {"id": "zz_004", "title": "第四章 交通设施规划管理", "level": 2, "source": "主规2024", "label": "停车位配建标准"}, {"id": "zz_005", "title": "第五章 市政公用设施", "level": 2, "source": "主规2024", "label": "供电标准/海绵城市"}, {"id": "zz_006", "title": "第六章 城市防灾", "level": 2, "source": "主规2024", "label": "消防/抗震"}, {"id": "zz_007", "title": "第七章 附则", "level": 2, "source": "主规2024", "label": ""}, {"id": "zz_008", "title": "附录 计容面积计算规则", "level": 4, "source": "主规2024", "label": "层高折算/架空层计容"}, {"id": "zz_009", "title": "附录 停车位配建标准表", "level": 4, "source": "主规2024", "label": "各业态停车配建指标"}, {"id": "zz_010", "title": "附录 日照间距系数表", "level": 4, "source": "主规2024", "label": ""}]}, "成都": {"region": "中西部", "files": [{"name": "成都市城市规划管理技术规定(2024)", "pages": 76, "size_kb": 2959}], "headings": [{"id": "cd_001", "title": "第一章 总则", "level": 2, "source": "主规2024", "label": ""}, {"id": "cd_002", "title": "第二章 建设用地规划管理", "level": 2, "source": "主规2024", "label": "工业用地容积率/密度控制"}, {"id": "cd_003", "title": "第三章 建筑工程规划管理", "level": 2, "source": "主规2024", "label": "建筑间距/退让/高度/面宽"}, {"id": "cd_004", "title": "第四章 交通设施", "level": 2, "source": "主规2024", "label": "停车位配建(独立标准表)"}, {"id": "cd_005", "title": "第五章 市政公用设施", "level": 2, "source": "主规2024", "label": "供电/海绵城市/管线综合"}, {"id": "cd_006", "title": "第六章 城市防灾", "level": 2, "source": "主规2024", "label": "消防/抗震/防洪"}, {"id": "cd_007", "title": "第七章 城市设计", "level": 2, "source": "主规2024", "label": "滨水/历史文化保护区管控"}, {"id": "cd_008", "title": "第八章 附则", "level": 2, "source": "主规2024", "label": ""}, {"id": "cd_009", "title": "附录一 计容建筑面积计算规则", "level": 4, "source": "主规2024", "label": "层高折算/阳台/地下空间计容规则"}, {"id": "cd_010", "title": "附录二 停车位配建标准", "level": 4, "source": "主规2024", "label": "各业态停车配建指标表"}, {"id": "cd_011", "title": "附录三 日照间距系数", "level": 4, "source": "主规2024", "label": ""}]}, "重庆": {"region": "中西部", "files": [{"name": "重庆市城市规划管理技术规定(渝府令318号)", "pages": "96条", "size_kb": 0, "note": "政府网站HTML全文"}], "headings": [{"id": "cq_001", "title": "第一章 总则 (第1-3条)", "level": 2, "source": "主规", "label": ""}, {"id": "cq_002", "title": "第二章 建设用地 (第4-13条)", "level": 2, "source": "主规", "label": ""}, {"id": "cq_003", "title": "第4条+附表1-2 用地指标", "level": 3, "source": "主规", "label": "容积率/建筑密度/绿地率(按地段分级,上限控制)"}, {"id": "cq_004", "title": "第10条+附录2 计容面积规则", "level": 3, "source": "主规", "label": "层高超限倍数计算;阳台/飘窗/花池等规则"}, {"id": "cq_005", "title": "第13条+附录3 停车配建", "level": 3, "source": "主规", "label": "按功能分别累计;充电设施预留"}, {"id": "cq_006", "title": "第三章 建筑间距 (第14-22条)", "level": 2, "source": "主规", "label": ""}, {"id": "cq_007", "title": "第15-16条 建筑半间距/间距", "level": 3, "source": "主规", "label": "按住/非住×高度分档;半间距之和"}, {"id": "cq_008", "title": "第17条(六) 工业建筑间距", "level": 3, "source": "主规", "label": "≤40m工业/仓储间距不受本规定限制(与江苏完全不同)"}, {"id": "cq_009", "title": "第21条 建筑立面宽度(连续面宽)", "level": 3, "source": "主规", "label": "≤24m→80m, 24-60m→70m, >60m→60m"}, {"id": "cq_010", "title": "第四章 建筑退让 (第23-30条)", "level": 2, "source": "主规", "label": ""}, {"id": "cq_011", "title": "第23-27条 建筑退让规则", "level": 3, "source": "主规", "label": "退道路/绿地/广场/学校/医院"}, {"id": "cq_012", "title": "第28-29条 地下建筑退让", "level": 3, "source": "主规", "label": "≥3m;需利用地下空间专题论证"}, {"id": "cq_013", "title": "第五章 空间形态 (第31-39条)", "level": 2, "source": "主规", "label": "山水保护;风貌;色彩/屋顶;天际线控制"}, {"id": "cq_014", "title": "第六章 公共空间 (第40-45条)", "level": 2, "source": "主规", "label": "架空空间(不计入容积率);公园控建"}, {"id": "cq_015", "title": "第七章 市政及管线 (第46-84条)", "level": 2, "source": "主规", "label": "道路退让/供电/排水/燃气管线;海绵要素"}, {"id": "cq_016", "title": "第八章 特别规定 (第85-94条)", "level": 2, "source": "主规", "label": "历史保护;公共安全;地灾;防洪;净空"}, {"id": "cq_017", "title": "第九章 附则 (第95-96条)", "level": 2, "source": "主规", "label": "名词解释(24项)"}]}, "济南": {"region": "北方", "files": [{"name": "济南市国土空间规划管理技术规定(2026)", "pages": "166条", "size_kb": 0, "note": "政府网站HTML全文"}], "headings": [{"id": "jn_001", "title": "第一章 总则", "level": 2, "source": "主规2026", "label": ""}, {"id": "jn_002", "title": "第二章 建设用地规划管理", "level": 2, "source": "主规2026", "label": "用地分类/容积率/建筑密度/绿地率指标"}, {"id": "jn_003", "title": "第三章 建筑工程规划管理", "level": 2, "source": "主规2026", "label": ""}, {"id": "jn_004", "title": "第一节 建筑间距与日照", "level": 3, "source": "主规2026", "label": "各类建筑间距;日照标准(住宅/学校/养老)"}, {"id": "jn_005", "title": "第二节 建筑退让", "level": 3, "source": "主规2026", "label": "退道路红线/用地边界;地下建筑退让"}, {"id": "jn_006", "title": "第三节 建筑高度与面宽", "level": 3, "source": "主规2026", "label": "限高;连续面宽控制"}, {"id": "jn_007", "title": "第四章 市政交通设施", "level": 2, "source": "主规2026", "label": "停车配建;市政管线"}, {"id": "jn_008", "title": "第五章 城市防灾", "level": 2, "source": "主规2026", "label": "消防/抗震/防洪"}, {"id": "jn_009", "title": "第六章 城市设计", "level": 2, "source": "主规2026", "label": ""}, {"id": "jn_010", "title": "附录一 计容面积计算规则", "level": 4, "source": "主规2026", "label": "层高折算/阳台/架空层计容"}, {"id": "jn_011", "title": "附录二 停车位配建标准", "level": 4, "source": "主规2026", "label": "各业态停车配建指标表"}]}, "青岛": {"region": "北方", "files": [{"name": "青岛市城市规划管理技术规定(2025)", "pages": 89, "size_kb": 2860}], "headings": [{"id": "qd_001", "title": "第一章 总则", "level": 2, "source": "主规", "label": ""}, {"id": "qd_002", "title": "第二章 建设用地规划管理", "level": 2, "source": "主规", "label": "工业用地容积率/密度/绿地率指标"}, {"id": "qd_003", "title": "第三章 建筑工程规划管理", "level": 2, "source": "主规", "label": ""}, {"id": "qd_004", "title": "第一节 建筑间距", "level": 3, "source": "主规", "label": "各类建筑间距规定;日照间距系数"}, {"id": "qd_005", "title": "第二节 建筑退让", "level": 3, "source": "主规", "label": "退道路/用地边界;地下建筑退让"}, {"id": "qd_006", "title": "第三节 建筑高度与面宽", "level": 3, "source": "主规", "label": "限高;连续面宽控制"}, {"id": "qd_007", "title": "第四节 日照分析", "level": 3, "source": "主规", "label": "住宅/教育/医疗建筑日照标准"}, {"id": "qd_008", "title": "第四章 城市交通", "level": 2, "source": "主规", "label": "停车位配建标准"}, {"id": "qd_009", "title": "第五章 市政公用设施", "level": 2, "source": "主规", "label": "供电负荷标准;海绵城市"}, {"id": "qd_010", "title": "第六章 城市防灾", "level": 2, "source": "主规", "label": "消防/抗震/人防"}, {"id": "qd_011", "title": "第七章 附则", "level": 2, "source": "主规", "label": ""}, {"id": "qd_012", "title": "附录一 计容面积计算规则", "level": 4, "source": "主规", "label": "层高折算/阳台/地下室计容规则"}, {"id": "qd_013", "title": "附录二 停车位配建指标", "level": 4, "source": "主规", "label": "各业态机动车/非机动车配建标准"}, {"id": "qd_014", "title": "附录三 日照间距系数表", "level": 4, "source": "主规", "label": ""}]}};
+
+let currentCity = null;
+let currentHeadingId = null;
+let taggedData = {}; // {city: {headingId: [catIds]}}
+
+// Initialize from localStorage
+try {
+  const saved = localStorage.getItem('regulation_tagging');
+  if (saved) taggedData = JSON.parse(saved);
+} catch(e) {}
+
+// ============================================================
+// RENDER SIDEBAR
+// ============================================================
+function renderSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const regions = {};
+  for (const [city, data] of Object.entries(CITIES_DATA)) {
+    const r = data.region || '其他';
+    if (!regions[r]) regions[r] = [];
+    regions[r].push(city);
+  }
+  
+  let html = '';
+  for (const [region, cities] of Object.entries(regions)) {
+    html += `<h3>${region}</h3>`;
+    for (const city of cities) {
+      const total = CITIES_DATA[city].headings.length;
+      const tagged = (taggedData[city] ? Object.keys(taggedData[city]).length : 0);
+      const pct = total ? Math.round(tagged/total*100) : 0;
+      const badge = pct > 0 ? `<span class="badge">${pct}%</span>` : '';
+      html += `<button class="city-btn" onclick="selectCity('${city}')">${city}${badge}</button>`;
+    }
+  }
+  sidebar.innerHTML = html;
+}
+
+// ============================================================
+// SELECT CITY & RENDER
+// ============================================================
+function selectCity(city) {
+  currentCity = city;
+  // Update sidebar active
+  document.querySelectorAll('.city-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.city-btn').forEach(b => { if (b.textContent.includes(city)) b.classList.add('active'); });
+  renderMain();
+}
+
+function renderMain() {
+  if (!currentCity) return;
+  
+  const data = CITIES_DATA[currentCity];
+  if (!data) return;
+  
+  const main = document.getElementById('main');
+  const cityTags = taggedData[currentCity] || {};
+  const totalTagged = Object.keys(cityTags).length;
+  
+  // Filters
+  let activeCats = [];
+  document.querySelectorAll('.cat-tag.active').forEach(t => activeCats.push(t.dataset.cat));
+  
+  let html = `<div class="city-title">${currentCity} <span style="font-size:13px;color:var(--text-light);">${data.region}</span></div>`;
+  html += `<div class="city-meta">${data.files.length} 份文件 · ${data.headings.length} 条章节 · ${totalTagged} 条已标注</div>`;
+  
+  // Progress bar
+  const pct = data.headings.length ? Math.round(totalTagged/data.headings.length*100) : 0;
+  html += `<div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>`;
+  
+  // File list
+  html += `<div class="file-list">`;
+  for (const f of data.files) {
+    const note = f.note ? ` · ${f.note}` : '';
+    html += `<span class="file-tag">📄 ${f.name} (${f.pages}页${note})</span>`;
+  }
+  html += `</div>`;
+  
+  // Category bar
+  html += `<div class="cat-bar">`;
+  for (const cat of CATEGORIES) {
+    const active = activeCats.includes(cat.id) ? ' active' : '';
+    html += `<span class="cat-tag${active}" data-cat="${cat.id}" onclick="toggleCat('${cat.id}')" title="${cat.desc}">${cat.label}</span>`;
+  }
+  html += `</div>`;
+  
+  // Category group select buttons
+  html += `<div class="select-all-bar">`;
+  html += `<button onclick="selectCatGroup('规划')">选 规划(13项)</button>`;
+  html += `<button onclick="selectCatGroup('建筑')">选 建筑(1项)</button>`;
+  html += `<button onclick="selectCatGroup('结构')">选 结构(1项)</button>`;
+  html += `<button onclick="selectCatGroup('机电')">选 机电(1项)</button>`;
+  html += `<button onclick="selectCatGroup('政策')">选 政策(7项)</button>`;
+  html += `<button onclick="clearCatFilters()">清除筛选</button>`;
+  html += `</div>`;
+  
+  // Filter headings
+  let filteredHeadings = data.headings;
+  if (activeCats.length > 0) {
+    // Show only headings that have any of the active tags OR all headings (user may want to tag)
+    filteredHeadings = data.headings.filter(h => {
+      const tags = (cityTags[h.id] || []);
+      return tags.some(t => activeCats.includes(t));
+    });
+    if (filteredHeadings.length === 0) {
+      filteredHeadings = data.headings; // show all if no match
+    }
+  }
+  
+  // Heading list
+  html += `<div class="heading-list">`;
+  if (filteredHeadings.length === 0) {
+    html += `<div class="empty"><p>暂无章节数据</p></div>`;
+  }
+  
+  for (const h of filteredHeadings) {
+    const levelClass = 'pl' + Math.min(h.level || 2, 4);
+    const levelLabel = {2:'章',3:'节',4:'附录',1:'篇'}[h.level] || '';
+    const hTags = (cityTags[h.id] || []);
+    
+    // Tag display
+    let tagsHtml = '';
+    if (hTags.length > 0) {
+      for (const tid of hTags) {
+        const cat = CATEGORIES.find(c => c.id === tid);
+        if (cat) tagsHtml += `<span class="tag-dot" title="${cat.label}">${cat.label.split(' ')[0]}</span>`;
+      }
+    } else {
+      tagsHtml = `<span style="color:#ccc;font-size:10px;">待标注</span>`;
+    }
+    
+    html += `<div class="heading-item ${levelClass}" onclick="openTagModal('${h.id}')" style="cursor:pointer;">`;
+    html += `<span class="heading-level">${levelLabel}</span>`;
+    if (h.source) html += `<span class="heading-source">${h.source}</span>`;
+    html += `<span class="heading-text">${h.title}`;
+    if (h.label) html += `<br><span class="heading-label">${h.label}</span>`;
+    html += `</span>`;
+    html += `<span class="heading-tags">${tagsHtml}</span>`;
+    html += `</div>`;
+  }
+  html += `</div>`;
+  
+  main.innerHTML = html;
+  updateStats();
+}
+
+// ============================================================
+// TAG MODAL
+// ============================================================
+let currentHeadingObj = null;
+
+function openTagModal(headingId) {
+  currentHeadingId = headingId;
+  const data = CITIES_DATA[currentCity];
+  const h = data.headings.find(x => x.id === headingId);
+  if (!h) return;
+  currentHeadingObj = h;
+  
+  document.getElementById('modalCity').textContent = currentCity;
+  document.getElementById('modalHeading').textContent = h.title;
+  
+  const cityTags = taggedData[currentCity] || {};
+  const currentTags = cityTags[headingId] || [];
+  
+  // Group categories
+  const groups = {};
+  for (const cat of CATEGORIES) {
+    const g = cat.group || '其他';
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(cat);
+  }
+  
+  let catHtml = '';
+  for (const [group, cats] of Object.entries(groups)) {
+    catHtml += `<div style="margin-bottom:8px"><strong style="font-size:12px;color:var(--text-light)">${group}类</strong></div>`;
+    catHtml += `<div class="cat-check" style="margin-bottom:12px">`;
+    for (const cat of cats) {
+      const checked = currentTags.includes(cat.id) ? 'checked' : '';
+      catHtml += `<label><input type="checkbox" value="${cat.id}" ${checked}> ${cat.label.split(' ')[1]||cat.label}</label>`;
+    }
+    catHtml += `</div>`;
+  }
+  
+  document.getElementById('catCheckboxes').innerHTML = catHtml;
+  document.getElementById('tagModal').classList.add('show');
+}
+
+function saveTags() {
+  if (!currentCity || !currentHeadingId) return;
+  
+  const checked = [];
+  document.querySelectorAll('#catCheckboxes input:checked').forEach(cb => checked.push(cb.value));
+  
+  if (!taggedData[currentCity]) taggedData[currentCity] = {};
+  taggedData[currentCity][currentHeadingId] = checked;
+  
+  closeModal();
+  renderMain();
+  renderSidebar();
+  updateStats();
+}
+
+function closeModal() {
+  document.getElementById('tagModal').classList.remove('show');
+}
+
+// ============================================================
+// FILTERS
+// ============================================================
+function toggleCat(catId) {
+  const tag = document.querySelector(`.cat-tag[data-cat="${catId}"]`);
+  if (tag) tag.classList.toggle('active');
+  renderMain();
+}
+
+function selectCatGroup(group) {
+  // Clear all first
+  document.querySelectorAll('.cat-tag').forEach(t => t.classList.remove('active'));
+  // Select matching
+  for (const cat of CATEGORIES) {
+    if (cat.group === group) {
+      document.querySelector(`.cat-tag[data-cat="${cat.id}"]`)?.classList.add('active');
+    }
+  }
+  renderMain();
+}
+
+function clearCatFilters() {
+  document.querySelectorAll('.cat-tag').forEach(t => t.classList.remove('active'));
+  renderMain();
+}
+
+// ============================================================
+// SAVE / EXPORT / IMPORT
+// ============================================================
+function saveToStorage() {
+  localStorage.setItem('regulation_tagging', JSON.stringify(taggedData));
+  alert('✅ 进度已保存到浏览器');
+}
+
+function updateStats() {
+  let total = 0, tagged = 0;
+  for (const [city, data] of Object.entries(CITIES_DATA)) {
+    total += data.headings.length;
+    tagged += (taggedData[city] ? Object.keys(taggedData[city]).length : 0);
+  }
+  document.getElementById('totalHeadings').textContent = total;
+  document.getElementById('taggedCount').textContent = tagged;
+}
+
+function exportJSON() {
+  const output = {
+    categories: CATEGORIES,
+    cities: CITIES_DATA,
+    tagging: taggedData,
+    exported: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(output, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'tagging_export.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importJSON() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (data.tagging) {
+          taggedData = data.tagging;
+          saveToStorage();
+          renderSidebar();
+          if (currentCity) renderMain();
+          updateStats();
+          alert('✅ 导入成功');
+        } else {
+          alert('❌ 无效的标注文件');
+        }
+      } catch(e) {
+        alert('❌ JSON 解析失败');
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+renderSidebar();
+updateStats();
+
+// Auto-save every 30s
+setInterval(saveToStorage, 30000);
+
+// Keyboard shortcut
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+</script>
+</body>
+</html>
