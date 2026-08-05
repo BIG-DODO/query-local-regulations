@@ -139,20 +139,50 @@
     if (!data.results.length) view.appendChild(el('div', 'placeholder', '无命中，换个关键词试试'));
   }
 
-  /* 通用条款区 */
-  function standards(view, list) {
+  /* 通用条款区：国标列表（可点击进入全文） */
+  function standards(view, list, stdMap, onSelect) {
     view.innerHTML = '';
+    const tip = el('div', 'meta', '国标全文（含表格）可检索；与 23 类标签不挂钩，直接查原文。');
+    tip.style.marginBottom = '8px';
+    view.appendChild(tip);
     list.forEach(s => {
-      const card = el('div', 'card');
+      const ready = !!(stdMap && stdMap[s.id]);
+      const card = el('div', 'card' + (ready ? ' result-item' : ''));
       card.innerHTML = `
-        <h3>${esc(s.id)} ${esc(s.name)}</h3>
+        <h3>${esc(s.name)}</h3>
         <div class="meta">
+          <span class="tag">${esc(s.id)}</span>
           <span class="tag ${/优先/.test(s.priority) ? '' : 'warn'}">${esc(s.priority)}</span>
-          <span class="tag">${esc(s.status)}</span><br>
-          语料提取中：章节树浏览 + 全文检索（含表格）即将上线
+          ${ready ? '<span class="tag">语料已入库，点击查阅 →</span>' : '<span class="tag warn">语料提取中</span>'}
         </div>`;
+      if (ready) card.onclick = () => onSelect(s);
       view.appendChild(card);
     });
+  }
+
+  /* 国标详情：章节条文浏览 + 关键词检索 */
+  function standardDetail(view, std, corpus, res, query, expandedId, onBack, onToggle) {
+    view.innerHTML = '';
+    const head = el('div', 'card');
+    head.innerHTML = `
+      <h3><a href="javascript:;" id="stdBack" style="color:var(--brand)">← 返回列表</a>　${esc(std.name)}</h3>
+      <div class="meta">${esc(corpus.doc)} · ${corpus.article_count} 条 · ${query ? `「${esc(query)}」命中 ${res.total} 条` : '输入顶部搜索框关键词可在本标准内检索'}</div>`;
+    view.appendChild(head);
+    head.querySelector('#stdBack').onclick = onBack;
+    const list = el('div', 'result-list');
+    res.results.forEach(r => {
+      const open = r.id === expandedId;
+      const card = el('div', 'card result-item' + (open ? ' open' : ''));
+      card.innerHTML = `
+        <h3>${esc(r.article)}</h3>
+        <div class="meta">${esc(r.chapter)}${r.section ? ' / ' + esc(r.section) : ''}</div>
+        <div class="snippet">${r.snippet}</div>
+        ${open ? `<div class="article-full">${esc(r.fullText || '')}</div><div class="page-ref">${r.page ? '原文第 ' + r.page + ' 页' : ''}</div>` : ''}`;
+      card.onclick = () => onToggle(open ? null : r.id);
+      list.appendChild(card);
+    });
+    view.appendChild(list);
+    if (!res.results.length) view.appendChild(el('div', 'placeholder', '无命中'));
   }
 
   /* 版本台账 */
@@ -185,6 +215,6 @@
   }
 
   global.RegulationRender = {
-    sidebar, catbar, tabs, overview, searchResults, standards, versions, placeholder, esc
+    sidebar, catbar, tabs, overview, searchResults, standards, standardDetail, versions, placeholder, esc
   };
 })(window);

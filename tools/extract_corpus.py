@@ -62,13 +62,16 @@ DOCS = {
         "pattern": "numeric", "stop_marker": "附录"},
     "郑州": {"doc_id": "zhengzhou-2024", "city": "郑州", "doc": "郑州市城市规划管理技术规定",
         "doc_version": "郑政〔2024〕18号 2024-12-06印发", "pdf": "07其他省份省会城市/郑州/郑州市城市规划管理技术规定-郑政2024-18号.pdf",
-        "pattern": "numeric", "stop_marker": "附件"},
+        "pattern": "numeric", "attachment_articles": True},
     "成都": {"doc_id": "chengdu-2024", "city": "成都", "doc": "成都市城市规划管理技术规定（2024）用地和建筑分册",
         "doc_version": "成府复〔2024〕41号", "pdf": "07其他省份省会城市/成都/城市规划管理技术规定（2024）用地和建筑分册.pdf",
         "pattern": "chengdu", "stop_marker": "附录"},
     "杭州": {"doc_id": "hangzhou-2026", "city": "杭州", "doc": "杭州市城市规划管理技术规定",
         "doc_version": "杭规划资源发〔2026〕4号 2026-04-01施行", "pdf": "05浙江省/杭州/杭州市城市规划管理技术规定.pdf",
         "pattern": "paren", "stop_marker": "附录"},
+    "GB55037": {"doc_id": "gb55037-2022", "city": "国标", "doc": "GB 55037-2022 建筑防火通用规范",
+        "doc_version": "2022", "pdf": "00-国标/GB55037-2022 建筑防火通用规范（文字版）.pdf",
+        "pattern": "numeric", "stop_marker": "附录"},
     "GB50016": {"doc_id": "gb50016-2018", "city": "国标", "doc": "GB 50016-2014（2018年版）建筑设计防火规范",
         "doc_version": "2018年版", "pdf": "00-国标/GB+50016-2014(2018年版)+建筑设计防火规范.pdf",
         "pattern": "numeric", "stop_marker": "附录"},
@@ -183,11 +186,12 @@ def extract(key, with_shots=False):
                 if "section" in pat and pat["section"].match(ln):
                     section = ln
                     continue
+                am = cfg.get("attachment_articles") and re.match(r"^附件\s*\d+", ln)
                 m = pat["article"].match(ln)
-                if m:
+                if m or am:
                     if cur:
                         articles.append(cur)
-                    cur = {"chapter": chapter, "section": section, "article": m.group(0),
+                    cur = {"chapter": chapter, "section": section, "article": am.group(0) if am else m.group(0),
                            "page": pno, "text": ln, "pages": [pno]}
                     continue
                 if cur is None:
