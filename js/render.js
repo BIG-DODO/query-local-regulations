@@ -82,7 +82,7 @@
   }
 
   /* 城市速览 */
-  function overview(view, cityEntry, today) {
+  function overview(view, cityEntry, today, policies, provPolicies) {
     view.innerHTML = '';
     if (!cityEntry) { view.appendChild(el('div', 'placeholder', '← 请在左侧选择城市')); return; }
     const vs = K.versionStatus(cityEntry, today);
@@ -115,6 +115,42 @@
     });
     grid.appendChild(g);
     view.appendChild(grid);
+
+    /* 政策类语料（17-23 深度搜索成果 + 省级政策） */
+    if (policies || provPolicies) {
+      view.appendChild(policyBlock('政策类（本市）', policies));
+      if (provPolicies) view.appendChild(policyBlock('省级政策（适用于本市）', provPolicies));
+    } else {
+      view.appendChild(el('div', 'placeholder', '政策类语料加载中…'));
+    }
+  }
+
+  const POLICY_TOPICS = ['17', '18', '19', '20', '21', '22', '23'];
+  function policyBlock(title, topicMap) {
+    const card = el('div', 'card');
+    let html = `<h3>${esc(title)}</h3>`;
+    if (!topicMap) {
+      html += '<div class="meta">无数据</div>';
+    } else {
+      POLICY_TOPICS.forEach(tid => {
+        const entries = topicMap[tid];
+        if (!entries || !entries.length) return;
+        const label = (K.CATEGORIES.find(c => c.id === Number(tid)) || {}).label || tid;
+        html += `<div class="meta" style="margin-top:8px"><b>${tid}. ${esc(label)}</b></div>`;
+        entries.forEach(e => {
+          const conf = e.confidence ? `<span class="tag">${esc(e.confidence)}</span>` : '';
+          const time = e.timeliness ? `<span class="tag ${/废止|失效|待核/.test(e.timeliness) ? 'warn' : ''}">${esc(e.timeliness)}</span>` : '';
+          const link = e.url ? ` <a href="${esc(e.url)}" target="_blank" rel="noopener">来源</a>` : '';
+          if (e.title === '（未检索到）') {
+            html += `<div class="meta" style="color:var(--muted)">— 未检索到明确政策</div>`;
+          } else {
+            html += `<div class="meta" style="margin:3px 0">· <b>${esc(e.title || '(无题)')}</b>${e.doc_no ? ' ' + esc(e.doc_no) : ''} ${conf}${time}${link}<br><span style="color:var(--muted)">${esc(e.summary || '')}</span></div>`;
+          }
+        });
+      });
+    }
+    card.innerHTML = html;
+    return card;
   }
 
   /* 条文检索结果 */
@@ -209,12 +245,60 @@
     view.appendChild(tbl);
   }
 
+  /* 横向对比：并排原文 */
+  function compare(view, cols, availableCities, selected, onToggleCity, expandedKey, onExpand) {
+    view.innerHTML = '';
+    const pick = el('div', 'card');
+    pick.innerHTML = '<h3>选择 2-3 个城市对比（顶部可再选类别/关键词）</h3>';
+    const chips = el('div');
+    availableCities.forEach(c => {
+      const on = selected.includes(c);
+      const chip = el('span', 'cat-chip' + (on ? ' active' : ''), esc(c));
+      chip.style.margin = '0 6px 6px 0';
+      chip.onclick = () => onToggleCity(c);
+      chips.appendChild(chip);
+    });
+    pick.appendChild(chips);
+    view.appendChild(pick);
+
+    if (!selected.length) { view.appendChild(el('div', 'placeholder', '勾选城市后开始对比')); return; }
+    const grid = el('div');
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = `repeat(${cols.length}, 1fr)`;
+    grid.style.gap = '10px';
+    grid.style.alignItems = 'start';
+    cols.forEach(col => {
+      const c = el('div');
+        c.innerHTML = `<div class="card"><h3>${esc(col.city)}</h3><div class="meta">${esc(col.doc || '')}</div></div>`;
+      if (col.status === 'loading') {
+        c.appendChild(el('div', 'placeholder', '语料加载中…'));
+      } else if (!col.articles.length) {
+        c.appendChild(el('div', 'placeholder', '该类别/关键词无命中'));
+      } else {
+        col.articles.forEach((a, i) => {
+          const key = col.city + ':' + a.id;
+          const open = expandedKey === key;
+          const card = el('div', 'card result-item' + (open ? ' open' : ''));
+          card.innerHTML = `
+            <h3>${esc(a.article)}</h3>
+            <div class="meta">${esc(a.chapter)}${a.section ? ' / ' + esc(a.section) : ''}</div>
+            <div class="snippet">${open ? '' : esc(a.text.slice(0, 120)) + (a.text.length > 120 ? '…' : '')}</div>
+            ${open ? `<div class="article-full">${esc(a.text)}</div><div class="page-ref">${a.page ? '原文第 ' + a.page + ' 页' : ''}</div>` : ''}`;
+          card.onclick = () => onExpand(open ? null : key);
+          c.appendChild(card);
+        });
+      }
+      grid.appendChild(c);
+    });
+    view.appendChild(grid);
+  }
+
   function placeholder(view, text) {
     view.innerHTML = '';
     view.appendChild(el('div', 'placeholder', text));
   }
 
   global.RegulationRender = {
-    sidebar, catbar, tabs, overview, searchResults, standards, standardDetail, versions, placeholder, esc
+    sidebar, catbar, tabs, overview, searchResults, standards, standardDetail, versions, compare, placeholder, esc
   };
 })(window);

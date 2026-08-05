@@ -50,13 +50,16 @@
     std: null,          // 选中的国标 id
     categoryId: null,
     query: '',
-    expanded: null
+    expanded: null,
+    compareCities: [],  // 并排对比选中的城市
+    compareExpanded: null
   };
   const data = {
     versions: null,
     groups: {},
     corpus: {},      // doc_id -> corpus JSON（懒加载缓存）
-    corpusStatus: {} // doc_id -> 'loading' | 'ok' | 'missing'
+    corpusStatus: {}, // doc_id -> 'loading' | 'ok' | 'missing'
+    policies: null   // policies.json（懒加载）
   };
 
   /* ---------- 数据加载 ---------- */
@@ -76,6 +79,21 @@
     const docId = CORPUS_MAP[city];
     if (!docId) { data.corpusStatus['city:' + city] = 'missing'; return Promise.resolve(false); }
     return loadDoc(docId);
+  }
+  function loadPolicies() {
+    if (data.policies) return Promise.resolve(true);
+    return fetch(`${DATA_BASE}/policies.json`)
+      .then(r => r.json())
+      .then(j => { data.policies = j.data || {}; return true; })
+      .catch(() => { data.policies = {}; return false; });
+  }
+  function policiesOf(cityEntry) {
+    if (!data.policies || !cityEntry) return { city: null, prov: null };
+    const prov = cityEntry.province || '';
+    return {
+      city: data.policies[cityEntry.city] || null,
+      prov: data.policies[prov] || data.policies[prov + '省'] || data.policies[prov + '市'] || null
+    };
   }
   function corpusOfCity(city) {
     return data.corpus[CORPUS_MAP[city]];
@@ -104,13 +122,17 @@
     const cityEntry = (data.versions.cities || []).find(c => c.city === state.city);
     switch (state.view) {
       case 'overview':
-        R.overview(view, cityEntry, TODAY);
+        if (cityEntry && !data.policies) { loadPolicies().then(renderAll); }
+        {
+          const p = cityEntry ? policiesOf(cityEntry) : { city: null, prov: null };
+          R.overview(view, cityEntry, TODAY, p.city, p.prov);
+        }
         break;
       case 'search':
         renderSearch(view);
         break;
       case 'compare':
-        R.placeholder(view, '横向对比<br>并排原文视图待 Phase 2 上线<br>（需 2-3 城语料齐备）');
+        renderCompare(view);
         break;
       case 'standards':
         renderStandards(view);
@@ -142,6 +164,33 @@
     }
     R.searchResults(view, res, state.query, state.expanded, id => {
       state.expanded = id;
+      renderView();
+    });
+  }
+
+  function renderCompare(view) {
+    const available = (data.versions.cities || []).map(c => c.city).filter(c => CORPUS_MAP[c]);
+    const cols = state.compareCities.map(city => {
+      const corpus = corpusOfCity(city);
+      if (!corpus) return { city, status: data.corpusStatus[CORPUS_MAP[city]] === 'loading' ? 'loading' : 'missing', articles: [] };
+      let pool = corpus.articles;
+      if (state.categoryId) pool = K.filterByCategory(pool, state.categoryId);
+      if (state.query) {
+        const res = K.search(corpus, state.query, { categoryId: state.categoryId, limit: 5 });
+        pool = res.results.map(r => corpus.articles.find(a => a.id === r.id)).filter(Boolean);
+      }
+      return { city, doc: corpus.doc, status: 'ok', articles: pool.slice(0, 5) };
+    });
+    R.compare(view, cols, available, state.compareCities, c => {
+      const i = state.compareCities.indexOf(c);
+      if (i >= 0) state.compareCities.splice(i, 1);
+      else if (state.compareCities.length < 3) state.compareCities.push(c);
+      else return;
+      const docId = CORPUS_MAP[c];
+      if (docId && !data.corpus[docId]) loadDoc(docId).then(renderAll);
+      renderAll();
+    }, state.compareExpanded, key => {
+      state.compareExpanded = key;
       renderView();
     });
   }
