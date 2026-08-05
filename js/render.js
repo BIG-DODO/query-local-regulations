@@ -17,6 +17,14 @@
   }
   function lightSpan(light) { return `<span class="light ${light}"></span>`; }
 
+  /* 原文页截图（无截图的文档 onerror 隐藏） */
+  function shotsHtml(shots) {
+    if (!shots || !shots.length) return '';
+    return '<div class="shots">' + shots.map(u =>
+      `<img src="${esc(u)}" loading="lazy" onerror="this.parentNode.style.display='none'" alt="原文页">`
+    ).join('') + '</div>';
+  }
+
   /* 侧栏：区域分组城市列表 + 国标区 */
   function sidebar(container, groups, standards, selectedCity, onCity, onStd) {
     container.innerHTML = '';
@@ -167,7 +175,7 @@
         <h3>${esc(r.article)} <span class="tag">${esc(r.city)}</span></h3>
         <div class="meta">${esc(r.chapter)}${r.section ? ' / ' + esc(r.section) : ''}</div>
         <div class="snippet">${r.snippet}</div>
-        ${open ? `<div class="article-full">${esc(r.fullText || '')}</div><div class="page-ref">来源：${esc(r.doc)} · 原文第 ${r.page} 页</div>` : ''}`;
+        ${open ? `<div class="article-full">${esc(r.fullText || '')}</div>${shotsHtml(r.shots)}<div class="page-ref">来源：${esc(r.doc)} · 原文第 ${r.page} 页</div>` : ''}`;
       card.onclick = () => onToggle(open ? null : r.id);
       list.appendChild(card);
     });
@@ -213,7 +221,7 @@
         <h3>${esc(r.article)}</h3>
         <div class="meta">${esc(r.chapter)}${r.section ? ' / ' + esc(r.section) : ''}</div>
         <div class="snippet">${r.snippet}</div>
-        ${open ? `<div class="article-full">${esc(r.fullText || '')}</div><div class="page-ref">${r.page ? '原文第 ' + r.page + ' 页' : ''}</div>` : ''}`;
+        ${open ? `<div class="article-full">${esc(r.fullText || '')}</div>${shotsHtml(r.shots)}<div class="page-ref">${r.page ? '原文第 ' + r.page + ' 页' : ''}</div>` : ''}`;
       card.onclick = () => onToggle(open ? null : r.id);
       list.appendChild(card);
     });
@@ -283,7 +291,7 @@
             <h3>${esc(a.article)}</h3>
             <div class="meta">${esc(a.chapter)}${a.section ? ' / ' + esc(a.section) : ''}</div>
             <div class="snippet">${open ? '' : esc(a.text.slice(0, 120)) + (a.text.length > 120 ? '…' : '')}</div>
-            ${open ? `<div class="article-full">${esc(a.text)}</div><div class="page-ref">${a.page ? '原文第 ' + a.page + ' 页' : ''}</div>` : ''}`;
+            ${open ? `<div class="article-full">${esc(a.text)}</div>${shotsHtml(a.shots)}<div class="page-ref">${a.page ? '原文第 ' + a.page + ' 页' : ''}</div>` : ''}`;
           card.onclick = () => onExpand(open ? null : key);
           c.appendChild(card);
         });

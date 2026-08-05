@@ -115,6 +115,20 @@ body {
   font-size: .85rem; line-height: 1.8; white-space: pre-wrap;
 }
 .page-ref { font-size: .72rem; color: var(--muted); margin-top: 6px; }
+.shots { margin-top: 8px; }
+.shots img { width: 100%; border: 1px solid var(--line); border-radius: 6px; margin-bottom: 6px; display: block; cursor: zoom-in; }
+
+/* 图片放大查看 */
+.lightbox {
+  position: fixed; inset: 0; background: rgba(10, 16, 30, .88);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 99; cursor: zoom-out; padding: 12px;
+}
+.lightbox img {
+  max-width: 96vw; max-height: 94vh; object-fit: contain;
+  background: #fff; border-radius: 6px;
+}
+.lightbox.hidden { display: none; }
 
 /* 版本台账表 */
 .vtable { width: 100%; border-collapse: collapse; font-size: .8rem; background: #fff; }

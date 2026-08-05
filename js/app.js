@@ -9,7 +9,13 @@
   const S = window.RegulationStorage;
 
   const DATA_BASE = 'data'; // TODO: 迁移公司服务器时改为 https://data.example.com/regulations
+  const SHOTS_BASE = 'shots'; // 原文页截图（本地 junction；上服务器后改绝对 URL）
   const TODAY = new Date().toISOString().slice(0, 10);
+
+  function shotsFor(docId, pages) {
+    if (!pages || !pages.length || !pages[0]) return [];
+    return pages.map(p => `${SHOTS_BASE}/${docId}/p${String(p).padStart(3, '0')}.png`);
+  }
 
   /* 已提取语料的城市 → doc_id */
   const CORPUS_MAP = {
@@ -160,7 +166,7 @@
     if (res.error) { R.placeholder(view, '检索出错：' + res.error); return; }
     if (state.expanded) {
       const art = corpus.articles.find(a => a.id === state.expanded);
-      res.results.forEach(r => { if (r.id === state.expanded && art) r.fullText = art.text; });
+      res.results.forEach(r => { if (r.id === state.expanded && art) { r.fullText = art.text; r.shots = shotsFor(CORPUS_MAP[state.city], art.pages); } });
     }
     R.searchResults(view, res, state.query, state.expanded, id => {
       state.expanded = id;
@@ -179,7 +185,8 @@
         const res = K.search(corpus, state.query, { categoryId: state.categoryId, limit: 5 });
         pool = res.results.map(r => corpus.articles.find(a => a.id === r.id)).filter(Boolean);
       }
-      return { city, doc: corpus.doc, status: 'ok', articles: pool.slice(0, 5) };
+      return { city, doc: corpus.doc, docId: CORPUS_MAP[city], status: 'ok',
+        articles: pool.slice(0, 5).map(a => Object.assign({}, a, { shots: shotsFor(CORPUS_MAP[city], a.pages) })) };
     });
     R.compare(view, cols, available, state.compareCities, c => {
       const i = state.compareCities.indexOf(c);
@@ -219,7 +226,7 @@
     }
     if (state.expanded) {
       const art = corpus.articles.find(a => a.id === state.expanded);
-      res.results.forEach(r => { if (r.id === state.expanded && art) r.fullText = art.text; });
+      res.results.forEach(r => { if (r.id === state.expanded && art) { r.fullText = art.text; r.shots = shotsFor(docId, art.pages); } });
     }
     R.standardDetail(view, std, corpus, res, state.query, state.expanded,
       () => { state.std = null; state.expanded = null; renderView(); },
@@ -255,6 +262,23 @@
 
     document.getElementById('sidebarToggle').onclick = () =>
       document.getElementById('sidebar').classList.toggle('closed');
+
+    /* 原文截图点击放大（lightbox）：再点/Esc 退出 */
+    const lb = document.createElement('div');
+    lb.className = 'lightbox hidden';
+    lb.innerHTML = '<img alt="放大查看">';
+    document.body.appendChild(lb);
+    const lbImg = lb.querySelector('img');
+    lb.onclick = () => lb.classList.add('hidden');
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') lb.classList.add('hidden'); });
+    document.addEventListener('click', e => {
+      const t = e.target;
+      if (t && t.tagName === 'IMG' && t.closest('.shots')) {
+        lbImg.src = t.src;
+        lb.classList.remove('hidden');
+        e.stopPropagation();
+      }
+    }, true);
 
     let timer = null;
     const input = document.getElementById('searchInput');
