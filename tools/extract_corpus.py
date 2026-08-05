@@ -34,6 +34,9 @@ PATTERNS = {
     "chengdu": {  # 成都2024分册：第X章 → x.x/x.x.x 节 → "1."式条文
         "chapter": rf"^第[{CN}]+章", "section": r"^\d+\.\d+(?:\.\d+)?(?!\d)", "article": r"^\d+[、．.](?!\d)",
     },
+    "numeric2": {  # 两级数字条（x.x）：温州停车/扬州等
+        "chapter": rf"^第[{CN}]+章", "section": r"^$", "article": r"^\d+\.\d+(?!\d)",
+    },
 }
 
 DOCS = {
@@ -132,6 +135,21 @@ DOCS = {
         "doc_version": "DB11/T 1813-2020", "pdf": "06直辖市/北京/北京市公共建筑机动车停车配建指标（DB11T1813-2020）.pdf", "pattern": "numeric", "stop_marker": "附录"},
     "天津990": {"doc_id": "tianjin-db990-2020", "city": "天津", "doc": "DB12/T 990-2020 建筑类建设工程规划许可证设计方案规范",
         "doc_version": "2021-01-16实施", "pdf": "06直辖市/天津/DB12T+990-2020建筑类建设工程规划许可证设计方案规范.pdf", "pattern": "numeric", "stop_marker": "附录"},
+    # ---- 第三批尾巴（txt 通道与二级数字条） ----
+    "温州": {"doc_id": "wenzhou-2017", "city": "温州", "doc": "温州市城市规划管理技术规定",
+        "doc_version": "温市规〔2017〕127号", "txt": "05浙江省/温州/温州市城市规划管理技术规定2017（全文）.txt",
+        "pattern": "tiao", "stop_marker": "附录"},
+    "扬州": {"doc_id": "yangzhou-2019", "city": "扬州", "doc": "扬州市市区规划管理技术规定",
+        "doc_version": "扬府规〔2019〕2号", "txt": "01江苏省/扬州/扬州市市区规划管理技术规定（全文）.txt",
+        "pattern": "numeric2"},
+    "常州": {"doc_id": "changzhou-2012", "city": "常州", "doc": "《江苏省城市规划管理技术规定（2011年版）》常州市实施细则",
+        "doc_version": "常规规〔2012〕2号（2025版细则编制中）", "txt": "01江苏省/常州/常州市实施细则（全文）.txt",
+        "pattern": "numeric2"},
+    "贵阳": {"doc_id": "guiyang-2024", "city": "贵阳", "doc": "贵阳市城市规划技术管理办法",
+        "doc_version": "市政府令87号 2024-02-01施行+2024-10修改", "pdf": "07其他省份省会城市/贵阳/贵阳市城市规划技术管理办法（87号令·2024年修改·规章库现行文本）.pdf",
+        "pattern": "tiao", "stop_marker": "附录"},
+    "温州停车": {"doc_id": "wenzhou-parking-2024", "city": "温州", "doc": "温州市区建筑工程停车配建标准（2024）",
+        "doc_version": "2024版", "pdf": "05浙江省/温州/温州市区建筑工程停车配建标准（2024）.pdf", "pattern": "numeric2", "stop_marker": "附录"},
 }
 
 TOC_DOTS = re.compile(r"\.{4,}|…{2,}|·{4,}")
