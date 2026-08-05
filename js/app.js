@@ -11,7 +11,7 @@
   const DATA_BASE = 'data'; // TODO: 迁移公司服务器时改为 https://data.example.com/regulations
   const TODAY = new Date().toISOString().slice(0, 10);
 
-  /* 已提取语料的城市 → doc_id（随 Phase 0 推进逐个增加） */
+  /* 已提取语料的城市 → doc_id */
   const CORPUS_MAP = {
     '青岛': 'qingdao-2025', '上海': 'shanghai-2010', '济南': 'jinan-2026',
     '广州': 'guangzhou-2019', '重庆': 'chongqing-2018', '深圳': 'shenzhen-2025',
@@ -19,7 +19,14 @@
     // 江苏各市共用省规 2025（市细则语料后续补充）
     '苏州': 'jiangsu-2025', '南京': 'jiangsu-2025', '无锡': 'jiangsu-2025',
     '常州': 'jiangsu-2025', '徐州': 'jiangsu-2025', '扬州': 'jiangsu-2025',
-    '盐城': 'jiangsu-2025', '连云港': 'jiangsu-2025'
+    '盐城': 'jiangsu-2025', '连云港': 'jiangsu-2025',
+    // 第二批（2026-08-05）
+    '福州': 'fuzhou-2024', '泉州': 'quanzhou-2018', '漳州': 'zhangzhou-2026',
+    '厦门': 'xiamen-2016', '宁波': 'ningbo-2014', '台州': 'taizhou-2025',
+    '嘉兴': 'jiaxing-2018', '珠海': 'zhuhai-2021', '东莞': 'dongguan-2020',
+    '佛山': 'foshan-2021', '惠州': 'huizhou-2026', '江门': 'jiangmen-2026',
+    '武汉': 'wuhan-2024', '南昌': 'nanchang-2014', '南宁': 'nanning-2011',
+    '合肥': 'hefei-2013', '淄博': 'zibo-2005', '莆田': 'fujian-2017'
   };
 
   /* 国标 → doc_id（已语料化 8 份；两份图集按页图使用） */
