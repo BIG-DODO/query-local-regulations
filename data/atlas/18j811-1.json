@@ -1,0 +1,257 @@
+{
+ "id": "18J811-1",
+ "name": "建筑设计防火规范图示（2019更正版）",
+ "total_pages": 276,
+ "entries": [
+  {
+   "pdf_page": 1,
+   "atlas_page": "封面",
+   "title": "封面/扉页"
+  },
+  {
+   "pdf_page": 5,
+   "atlas_page": "目录1",
+   "title": "目录"
+  },
+  {
+   "pdf_page": 7,
+   "atlas_page": "3",
+   "title": "编制说明"
+  },
+  {
+   "pdf_page": 9,
+   "atlas_page": "2-1",
+   "title": "2.1 术语"
+  },
+  {
+   "pdf_page": 14,
+   "atlas_page": "2-6",
+   "title": "2.2 符号"
+  },
+  {
+   "pdf_page": 15,
+   "atlas_page": "3-1",
+   "title": "3.1 火灾危险性分类"
+  },
+  {
+   "pdf_page": 20,
+   "atlas_page": "3-6",
+   "title": "3.2 厂房和仓库的耐火等级"
+  },
+  {
+   "pdf_page": 25,
+   "atlas_page": "3-11",
+   "title": "3.3 厂房和仓库的层数、面积和平面布置"
+  },
+  {
+   "pdf_page": 33,
+   "atlas_page": "3-19",
+   "title": "3.4 厂房的防火间距"
+  },
+  {
+   "pdf_page": 41,
+   "atlas_page": "3-27",
+   "title": "3.5 仓库的防火间距"
+  },
+  {
+   "pdf_page": 45,
+   "atlas_page": "3-31",
+   "title": "3.6 厂房和仓库的防爆"
+  },
+  {
+   "pdf_page": 51,
+   "atlas_page": "3-37",
+   "title": "3.7 厂房的安全疏散"
+  },
+  {
+   "pdf_page": 54,
+   "atlas_page": "3-40",
+   "title": "3.8 仓库的安全疏散"
+  },
+  {
+   "pdf_page": 56,
+   "atlas_page": "4-1",
+   "title": "4.1 一般规定"
+  },
+  {
+   "pdf_page": 57,
+   "atlas_page": "4-2",
+   "title": "4.2 甲、乙、丙类液体储罐（区）的防火间距"
+  },
+  {
+   "pdf_page": 61,
+   "atlas_page": "4-6",
+   "title": "4.3 可燃、助燃气体储罐（区）的防火间距"
+  },
+  {
+   "pdf_page": 64,
+   "atlas_page": "4-9",
+   "title": "4.4 液化石油气储罐（区）的防火间距"
+  },
+  {
+   "pdf_page": 66,
+   "atlas_page": "4-11",
+   "title": "4.5 可燃材料堆场的防火间距"
+  },
+  {
+   "pdf_page": 68,
+   "atlas_page": "5-1",
+   "title": "5.1 建筑分类和耐火等级"
+  },
+  {
+   "pdf_page": 75,
+   "atlas_page": "5-8",
+   "title": "5.2 总平面布局"
+  },
+  {
+   "pdf_page": 81,
+   "atlas_page": "5-14",
+   "title": "5.3 防火分区和层数"
+  },
+  {
+   "pdf_page": 93,
+   "atlas_page": "5-26",
+   "title": "5.4 平面布置"
+  },
+  {
+   "pdf_page": 115,
+   "atlas_page": "5-48",
+   "title": "5.5 安全疏散和避难"
+  },
+  {
+   "pdf_page": 162,
+   "atlas_page": "6-1",
+   "title": "6.1 防火墙"
+  },
+  {
+   "pdf_page": 165,
+   "atlas_page": "6-4",
+   "title": "6.2 建筑构件和管道井"
+  },
+  {
+   "pdf_page": 173,
+   "atlas_page": "6-12",
+   "title": "6.3 屋顶、闷顶和建筑缝隙"
+  },
+  {
+   "pdf_page": 176,
+   "atlas_page": "6-15",
+   "title": "6.4 疏散楼梯间和疏散楼梯等"
+  },
+  {
+   "pdf_page": 188,
+   "atlas_page": "6-27",
+   "title": "6.5 防火门、窗和防火卷帘"
+  },
+  {
+   "pdf_page": 190,
+   "atlas_page": "6-29",
+   "title": "6.6 天桥、栈桥和管沟"
+  },
+  {
+   "pdf_page": 193,
+   "atlas_page": "6-32",
+   "title": "6.7 建筑保温和外墙装饰"
+  },
+  {
+   "pdf_page": 198,
+   "atlas_page": "7-1",
+   "title": "7.1 消防车道"
+  },
+  {
+   "pdf_page": 205,
+   "atlas_page": "7-8",
+   "title": "7.2 救援场地和入口"
+  },
+  {
+   "pdf_page": 211,
+   "atlas_page": "7-14",
+   "title": "7.3 消防电梯"
+  },
+  {
+   "pdf_page": 215,
+   "atlas_page": "7-18",
+   "title": "7.4 直升机停机坪"
+  },
+  {
+   "pdf_page": 216,
+   "atlas_page": "8-1",
+   "title": "8.1 一般规定"
+  },
+  {
+   "pdf_page": 218,
+   "atlas_page": "8-3",
+   "title": "8.2 室内消火栓系统"
+  },
+  {
+   "pdf_page": 218,
+   "atlas_page": "8-3",
+   "title": "8.3 自动灭火系统"
+  },
+  {
+   "pdf_page": 221,
+   "atlas_page": "8-6",
+   "title": "8.4 火灾自动报警系统"
+  },
+  {
+   "pdf_page": 223,
+   "atlas_page": "8-8",
+   "title": "8.5 防烟和排烟设施"
+  },
+  {
+   "pdf_page": 227,
+   "atlas_page": "9-1",
+   "title": "9.1 一般规定"
+  },
+  {
+   "pdf_page": 227,
+   "atlas_page": "9-1",
+   "title": "9.2 供暖"
+  },
+  {
+   "pdf_page": 227,
+   "atlas_page": "9-1",
+   "title": "9.3 通风和空气调节"
+  },
+  {
+   "pdf_page": 229,
+   "atlas_page": "10-1",
+   "title": "10.1 消防电源及其配电"
+  },
+  {
+   "pdf_page": 230,
+   "atlas_page": "10-2",
+   "title": "10.2 电力线路及电器装置"
+  },
+  {
+   "pdf_page": 231,
+   "atlas_page": "10-3",
+   "title": "10.3 消防应急照明和疏散指示标志"
+  },
+  {
+   "pdf_page": 247,
+   "atlas_page": "12-1",
+   "title": "12.1 一般规定"
+  },
+  {
+   "pdf_page": 248,
+   "atlas_page": "12-2",
+   "title": "12.2 消防给水和灭火设施"
+  },
+  {
+   "pdf_page": 249,
+   "atlas_page": "12-3",
+   "title": "12.3 通风和排烟系统"
+  },
+  {
+   "pdf_page": 249,
+   "atlas_page": "12-3",
+   "title": "12.4 火灾自动报警系统"
+  },
+  {
+   "pdf_page": 249,
+   "atlas_page": "12-3",
+   "title": "12.5 供电及其他"
+  }
+ ]
+}

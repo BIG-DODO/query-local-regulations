@@ -65,14 +65,17 @@
     query: '',
     expanded: null,
     compareCities: [],  // 并排对比选中的城市
-    compareExpanded: null
+    compareExpanded: null,
+    atlasPage: 1      // 图集当前页
   };
   const data = {
     versions: null,
     groups: {},
     corpus: {},      // doc_id -> corpus JSON（懒加载缓存）
     corpusStatus: {}, // doc_id -> 'loading' | 'ok' | 'missing'
-    policies: null   // policies.json（懒加载）
+    policies: null,   // policies.json（懒加载）
+    atlas: {},       // 图集目录（id -> JSON）
+    cards: null      // 条文卡片（懒加载）
   };
 
   /* ---------- 数据加载 ---------- */
@@ -99,6 +102,36 @@
       .then(r => r.json())
       .then(j => { data.policies = j.data || {}; return true; })
       .catch(() => { data.policies = {}; return false; });
+  }
+  function loadAtlas(stdId) {
+    const fid = stdId.toLowerCase();
+    if (data.atlas[fid]) return Promise.resolve(true);
+    return fetch(`${DATA_BASE}/atlas/${fid}.json`)
+      .then(r => { if (!r.ok) throw new Error('404'); return r.json(); })
+      .then(j => { data.atlas[fid] = j; return true; })
+      .catch(() => false);
+  }
+  function loadCards() {
+    if (data.cards) return Promise.resolve(true);
+    return fetch(`${DATA_BASE}/cards.json`)
+      .then(r => r.json())
+      .then(j => { data.cards = j.cards || []; return true; })
+      .catch(() => { data.cards = []; return false; });
+  }
+  /* 某城已核验卡片（按类别 id 归组） */
+  function confirmedCardsOf(city) {
+    const out = {};
+    (data.cards || []).forEach(c => {
+      if (c.city !== city || c.status !== 'confirmed') return;
+      (c.category || []).forEach(catLabel => {
+        const cat = K.CATEGORIES.find(x => x.label === catLabel);
+        if (cat) {
+          out[cat.id] = out[cat.id] || [];
+          out[cat.id].push(c);
+        }
+      });
+    });
+    return out;
   }
   function policiesOf(cityEntry) {
     if (!data.policies || !cityEntry) return { city: null, prov: null };
@@ -129,7 +162,11 @@
       if (state.categoryId && state.city && state.view !== 'search') state.view = 'search';
       renderAll();
     });
-    R.tabs(document.getElementById('tabs'), state.view, v => { state.view = v; renderAll(); });
+    R.tabs(document.getElementById('tabs'), state.view, v => {
+      state.view = v;
+      if (v === 'standards') state.std = null;  // 点页签回到国标列表
+      renderAll();
+    });
     renderView();
     persist();
   }
@@ -140,9 +177,27 @@
     switch (state.view) {
       case 'overview':
         if (cityEntry && !data.policies) { loadPolicies().then(renderAll); }
+        if (cityEntry && !data.cards) { loadCards().then(renderAll); }
+        if (cityEntry && corpusStateOfCity(cityEntry.city) === 'missing' && CORPUS_MAP[cityEntry.city] && !data.corpus[CORPUS_MAP[cityEntry.city][0]]) {
+          loadCorpus(cityEntry.city).then(renderAll);
+        }
         {
           const p = cityEntry ? policiesOf(cityEntry) : { city: null, prov: null };
-          R.overview(view, cityEntry, TODAY, p.city, p.prov);
+          let counts = null;
+          if (cityEntry) {
+            const arts = [];
+            corporaOfCity(cityEntry.city).forEach(c => arts.push(...c.articles));
+            if (arts.length) {
+              counts = {};
+              K.CATEGORIES.forEach(c => { counts[c.id] = K.filterByCategory(arts, c.id).length; });
+            }
+          }
+          const cardsByCat = cityEntry ? confirmedCardsOf(cityEntry.city) : {};
+          R.overview(view, cityEntry, TODAY, p.city, p.prov, counts, catId => {
+            state.categoryId = catId;
+            state.view = 'search';
+            renderAll();
+          }, cardsByCat);
         }
         break;
       case 'search':
@@ -233,7 +288,24 @@
   function renderStandards(view) {
     const list = data.versions.national_standards || [];
     if (!state.std) {
-      R.standards(view, list, STD_MAP, s => { state.std = s.id; state.expanded = null; renderView(); });
+      R.standards(view, list, STD_MAP, s => {
+        state.std = s.id;
+        state.expanded = null;
+        state.atlasPage = 1;
+        if (s.status === '图集') loadAtlas(s.id).then(renderAll);
+        renderView();
+      });
+      return;
+    }
+    const std = list.find(x => x.id === state.std);
+    // 图集浏览模式
+    if (std && std.status === '图集') {
+      const meta = data.atlas[state.std.toLowerCase()];
+      if (!meta) { R.placeholder(view, '图集目录加载中…'); return; }
+      R.atlas(view, meta, state.atlasPage, `${SHOTS_BASE}/${std.id.toLowerCase()}`,
+        p => { state.atlasPage = p; renderView(); },
+        () => { if (state.atlasPage > 1) { state.atlasPage--; renderView(); } },
+        () => { if (state.atlasPage < meta.total_pages) { state.atlasPage++; renderView(); } });
       return;
     }
     const docId = STD_MAP[state.std];
@@ -242,7 +314,6 @@
     if (st === 'loading') { R.placeholder(view, '语料加载中…'); return; }
     if (!data.corpus[docId]) { R.placeholder(view, '语料加载失败'); return; }
     const corpus = data.corpus[docId];
-    const std = list.find(x => x.id === state.std);
     let res;
     if (state.query) {
       res = K.search(corpus, state.query, {});
@@ -274,8 +345,12 @@
     state.std = s.id;
     state.view = 'standards';
     state.expanded = null;
-    const docId = STD_MAP[s.id];
-    if (docId && data.corpusStatus[docId] === undefined) loadDoc(docId).then(renderAll);
+    state.atlasPage = 1;
+    if (s.status === '图集') loadAtlas(s.id).then(renderAll);
+    else {
+      const docId = STD_MAP[s.id];
+      if (docId && data.corpusStatus[docId] === undefined) loadDoc(docId).then(renderAll);
+    }
     renderAll();
   }
   function persist() {

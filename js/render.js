@@ -90,7 +90,7 @@
   }
 
   /* 城市速览 */
-  function overview(view, cityEntry, today, policies, provPolicies) {
+  function overview(view, cityEntry, today, policies, provPolicies, catCounts, onCatCell, cardsByCat) {
     view.innerHTML = '';
     if (!cityEntry) { view.appendChild(el('div', 'placeholder', '← 请在左侧选择城市')); return; }
     const vs = K.versionStatus(cityEntry, today);
@@ -116,13 +116,38 @@
     }
 
     const grid = el('div', 'card');
-    grid.innerHTML = '<h3>23 类规范速览（卡片数据待沉淀）</h3>';
+    grid.innerHTML = '<h3>23 类规范速览（语料命中数，点击直达检索；✓=已核验卡片）</h3>';
     const g = el('div', 'cat-grid');
     K.CATEGORIES.forEach(c => {
-      g.appendChild(el('div', 'cat-cell', `<span class="st">○ 空</span>${c.id}. ${esc(c.label)}`));
+      const n = catCounts ? catCounts[c.id] : null;
+      const hasCards = cardsByCat && cardsByCat[c.id] && cardsByCat[c.id].length > 0;
+      const st = hasCards ? `✓ 已核验${n > 0 ? ' · ' + n + ' 条' : ''}` : (n === null || n === undefined ? '—' : n > 0 ? n + ' 条' : '○ 无');
+      const cell = el('div', 'cat-cell', `<span class="st">${st}</span>${c.id}. ${esc(c.label)}`);
+      if (hasCards) cell.style.borderColor = 'var(--green)';
+      if (n > 0) {
+        cell.style.cursor = 'pointer';
+        cell.onclick = () => onCatCell && onCatCell(c.id);
+      }
+      g.appendChild(cell);
     });
     grid.appendChild(g);
     view.appendChild(grid);
+
+    /* 已核验卡片（卡片层） */
+    if (cardsByCat && Object.keys(cardsByCat).length) {
+      const cc = el('div', 'card');
+      let html = '<h3>已核验卡片（可信引用层）</h3>';
+      Object.keys(cardsByCat).sort((a, b) => a - b).forEach(catId => {
+        cardsByCat[catId].forEach(card => {
+          html += `<div class="meta" style="margin:6px 0">
+            <b>${catId}. ${esc(card.category.join('、'))}</b> <span class="tag">✓ ${esc(card.verified_at || '')}核验</span><br>
+            ${esc(card.summary)}<br>
+            <span style="color:var(--muted)">出处：${esc(card.source || '—')}</span></div>`;
+        });
+      });
+      cc.innerHTML = html;
+      view.appendChild(cc);
+    }
 
     /* 政策类语料（17-23 深度搜索成果 + 省级政策） */
     if (policies || provPolicies) {
@@ -190,14 +215,15 @@
     tip.style.marginBottom = '8px';
     view.appendChild(tip);
     list.forEach(s => {
-      const ready = !!(stdMap && stdMap[s.id]);
+      const isAtlas = s.status === '图集';
+      const ready = !!(stdMap && stdMap[s.id]) || isAtlas;
       const card = el('div', 'card' + (ready ? ' result-item' : ''));
       card.innerHTML = `
         <h3>${esc(s.name)}</h3>
         <div class="meta">
           <span class="tag">${esc(s.id)}</span>
           <span class="tag ${/优先/.test(s.priority) ? '' : 'warn'}">${esc(s.priority)}</span>
-          ${ready ? '<span class="tag">语料已入库，点击查阅 →</span>' : '<span class="tag warn">语料提取中</span>'}
+          ${isAtlas ? '<span class="tag">图示浏览（按目录翻页）→</span>' : ready ? '<span class="tag">语料已入库，点击查阅 →</span>' : '<span class="tag warn">语料提取中</span>'}
         </div>`;
       if (ready) card.onclick = () => onSelect(s);
       view.appendChild(card);
@@ -301,12 +327,49 @@
     view.appendChild(grid);
   }
 
+  /* 图集浏览：目录选择 + 页面图 + 翻页 */
+  function atlas(view, meta, curPage, shotsBase, onJump, onPrev, onNext) {
+    view.innerHTML = '';
+    const head = el('div', 'card');
+    head.innerHTML = `<h3>${esc(meta.name)}</h3>
+      <div class="meta">共 ${meta.total_pages} 页 · 按目录节跳转或逐页翻页，点击图片可放大</div>`;
+    view.appendChild(head);
+
+    const nav = el('div', 'card');
+    const sel = document.createElement('select');
+    sel.style.cssText = 'width:100%;padding:8px;font-size:.9rem;border:1px solid var(--line);border-radius:6px;';
+    meta.entries.forEach(e => {
+      const opt = document.createElement('option');
+      opt.value = e.pdf_page;
+      opt.textContent = `${e.title}（第 ${e.pdf_page} 页）`;
+      if (e.pdf_page === curPage) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.onchange = () => onJump(Number(sel.value));
+    nav.appendChild(sel);
+    const bar = el('div', '', '');
+    bar.style.cssText = 'display:flex;gap:8px;margin-top:8px;align-items:center;';
+    const prev = el('button', 'atlas-btn', '← 上一页');
+    const next = el('button', 'atlas-btn', '下一页 →');
+    const info = el('span', 'meta', `第 ${curPage} / ${meta.total_pages} 页`);
+    info.style.marginLeft = 'auto';
+    prev.onclick = onPrev;
+    next.onclick = onNext;
+    bar.appendChild(prev); bar.appendChild(next); bar.appendChild(info);
+    nav.appendChild(bar);
+    view.appendChild(nav);
+
+    const imgWrap = el('div', 'card');
+    imgWrap.innerHTML = `<div class="shots"><img src="${shotsBase}/p${String(curPage).padStart(3, '0')}.png" loading="lazy" onerror="this.parentNode.innerHTML='<div class=placeholder>本页图像待渲染</div>'" alt="图集第${curPage}页"></div>`;
+    view.appendChild(imgWrap);
+  }
+
   function placeholder(view, text) {
     view.innerHTML = '';
     view.appendChild(el('div', 'placeholder', text));
   }
 
   global.RegulationRender = {
-    sidebar, catbar, tabs, overview, searchResults, standards, standardDetail, versions, compare, placeholder, esc
+    sidebar, catbar, tabs, overview, searchResults, standards, standardDetail, versions, compare, atlas, placeholder, esc
   };
 })(window);
