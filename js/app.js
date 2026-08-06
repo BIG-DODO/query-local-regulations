@@ -17,25 +17,32 @@
     return pages.map(p => `${SHOTS_BASE}/${docId}/p${String(p).padStart(3, '0')}.png`);
   }
 
-  /* 已提取语料的城市 → doc_id */
+  /* 已提取语料的城市 → doc_id 数组（主规定 + 配套文件） */
   const CORPUS_MAP = {
-    '青岛': 'qingdao-2025', '上海': 'shanghai-2010', '济南': 'jinan-2026',
-    '广州': 'guangzhou-2019', '重庆': 'chongqing-2018', '深圳': 'shenzhen-2025',
-    '郑州': 'zhengzhou-2024', '成都': 'chengdu-2024', '杭州': 'hangzhou-2026',
-    // 江苏各市共用省规 2025（市细则语料后续补充）
-    '苏州': 'jiangsu-2025', '南京': 'jiangsu-2025', '无锡': 'jiangsu-2025',
-    '常州': 'jiangsu-2025', '徐州': 'jiangsu-2025', '扬州': 'jiangsu-2025',
-    '盐城': 'jiangsu-2025', '连云港': 'jiangsu-2025',
-    // 第二批（2026-08-05）
-    '福州': 'fuzhou-2024', '泉州': 'quanzhou-2018', '漳州': 'zhangzhou-2026',
-    '厦门': 'xiamen-2016', '宁波': 'ningbo-2014', '台州': 'taizhou-2025',
-    '嘉兴': 'jiaxing-2018', '珠海': 'zhuhai-2021', '东莞': 'dongguan-2020',
-    '佛山': 'foshan-2021', '惠州': 'huizhou-2026', '江门': 'jiangmen-2026',
-    '武汉': 'wuhan-2024', '南昌': 'nanchang-2014', '南宁': 'nanning-2011',
-    '合肥': 'hefei-2013', '淄博': 'zibo-2005', '莆田': 'fujian-2017',
-    // 第三批（2026-08-05）
-    '温州': 'wenzhou-2017', '扬州': 'yangzhou-2019', '常州': 'changzhou-2012',
-    '贵阳': 'guiyang-2024'
+    '青岛': ['qingdao-2025', 'qingdao-guide-2025'],
+    '上海': ['shanghai-2010', 'shanghai-area-calc', 'shanghai-appnote', 'sh-dgtj08-7'],
+    '济南': ['jinan-2026', 'jinan-parking-2023'],
+    '广州': ['guangzhou-2019'], '重庆': ['chongqing-2018'], '深圳': ['shenzhen-2025'],
+    '郑州': ['zhengzhou-2024'], '成都': ['chengdu-2024'], '杭州': ['hangzhou-2026', 'hz-parking-rule', 'zj-parking-std'],
+    // 江苏各市共用省规 2025 + 市细则
+    '苏州': ['jiangsu-2025', 'suzhou-rule1', 'suzhou-rule2'], '南京': ['jiangsu-2025'],
+    '无锡': ['jiangsu-2025', 'wuxi-parking'],
+    '常州': ['jiangsu-2025', 'changzhou-2012'], '徐州': ['jiangsu-2025', 'xuzhou-parking'],
+    '扬州': ['jiangsu-2025', 'yangzhou-2019'], '盐城': ['jiangsu-2025'], '连云港': ['jiangsu-2025'],
+    // 第二批
+    '福州': ['fuzhou-2024'], '泉州': ['quanzhou-2018'], '漳州': ['zhangzhou-2026'],
+    '厦门': ['xiamen-2016', 'xiamen-parking-2020'], '宁波': ['ningbo-2014', 'zj-parking-std'],
+    '台州': ['taizhou-2025', 'zj-parking-std'],
+    '嘉兴': ['jiaxing-2018', 'zj-parking-std'], '珠海': ['zhuhai-2021'], '东莞': ['dongguan-2020'],
+    '佛山': ['foshan-2021'], '惠州': ['huizhou-2026'], '江门': ['jiangmen-2026'],
+    '武汉': ['wuhan-2024'], '南昌': ['nanchang-2014', 'nanchang-guide'], '南宁': ['nanning-2011', 'nanning-guide-2025'],
+    '合肥': ['hefei-2013'], '淄博': ['zibo-2005'], '莆田': ['fujian-2017', 'putian-sunlight'],
+    // 第三批
+    '温州': ['wenzhou-2017', 'wenzhou-parking-2024', 'zj-parking-std'],
+    '贵阳': ['guiyang-2024'],
+    '北京': ['beijing-dbt1813-2020', 'beijing-jz2025-25', 'beijing-tongze-2003'],
+    '天津': ['tianjin-db990-2020', 'tianjin-db1040'],
+    '西安': ['xian-2018', 'xian-parking', 'xian-parking-194']
   };
 
   /* 国标 → doc_id（已语料化 8 份；两份图集按页图使用） */
@@ -82,9 +89,9 @@
       .catch(() => { data.corpusStatus[docId] = 'missing'; return false; });
   }
   function loadCorpus(city) {
-    const docId = CORPUS_MAP[city];
-    if (!docId) { data.corpusStatus['city:' + city] = 'missing'; return Promise.resolve(false); }
-    return loadDoc(docId);
+    const docIds = CORPUS_MAP[city];
+    if (!docIds || !docIds.length) { data.corpusStatus['city:' + city] = 'missing'; return Promise.resolve(false); }
+    return Promise.all(docIds.map(loadDoc));
   }
   function loadPolicies() {
     if (data.policies) return Promise.resolve(true);
@@ -101,11 +108,15 @@
       prov: data.policies[prov] || data.policies[prov + '省'] || data.policies[prov + '市'] || null
     };
   }
-  function corpusOfCity(city) {
-    return data.corpus[CORPUS_MAP[city]];
+  /* 多文档：返回该城市已加载的语料数组 */
+  function corporaOfCity(city) {
+    return (CORPUS_MAP[city] || []).map(id => data.corpus[id]).filter(Boolean);
   }
   function corpusStateOfCity(city) {
-    return data.corpus[CORPUS_MAP[city]] ? 'ok' : (data.corpusStatus[CORPUS_MAP[city]] || data.corpusStatus['city:' + city]);
+    const ids = CORPUS_MAP[city] || [];
+    if (!ids.length) return data.corpusStatus['city:' + city] || 'missing';
+    if (ids.some(id => data.corpusStatus[id] === 'loading')) return 'loading';
+    return ids.some(id => data.corpus[id]) ? 'ok' : 'missing';
   }
 
   /* ---------- 渲染 ---------- */
@@ -153,20 +164,34 @@
     if (!state.city) { R.placeholder(view, '← 请先在左侧选择城市'); return; }
     const st = corpusStateOfCity(state.city);
     if (st === 'loading') { R.placeholder(view, '语料加载中…'); return; }
-    if (st === 'missing' || !corpusOfCity(state.city)) {
-      R.placeholder(view, `「${state.city}」语料待提取<br>目前 L1 九城 + 江苏省规已入库，其余陆续补齐`);
+    const corpora = corporaOfCity(state.city);
+    if (st === 'missing' || !corpora.length) {
+      R.placeholder(view, `「${state.city}」语料待提取（任务⑧/⑨进行中）`);
       return;
     }
     if (!state.query && !state.categoryId) {
       R.placeholder(view, '输入关键词检索，或点击顶部类别标签筛选');
       return;
     }
-    const corpus = corpusOfCity(state.city);
-    const res = K.search(corpus, state.query, { categoryId: state.categoryId });
-    if (res.error) { R.placeholder(view, '检索出错：' + res.error); return; }
+    // 多文档合并检索
+    let merged = [];
+    let total = 0;
+    corpora.forEach(corpus => {
+      const res = K.search(corpus, state.query, { categoryId: state.categoryId, limit: 50 });
+      if (res.error) return;
+      res.results.forEach(r => { r.docId = corpus.doc_id; });
+      merged = merged.concat(res.results);
+      total += res.total;
+    });
+    merged.sort((a, b) => b.score - a.score);
+    const res = { results: merged.slice(0, 50), total };
     if (state.expanded) {
-      const art = corpus.articles.find(a => a.id === state.expanded);
-      res.results.forEach(r => { if (r.id === state.expanded && art) { r.fullText = art.text; r.shots = shotsFor(CORPUS_MAP[state.city], art.pages); } });
+      let art = null, docId = null;
+      corpora.forEach(corpus => {
+        const a = corpus.articles.find(x => x.id === state.expanded);
+        if (a) { art = a; docId = corpus.doc_id; }
+      });
+      res.results.forEach(r => { if (r.id === state.expanded && art) { r.fullText = art.text; r.shots = shotsFor(docId, art.pages); } });
     }
     R.searchResults(view, res, state.query, state.expanded, id => {
       state.expanded = id;
@@ -177,24 +202,27 @@
   function renderCompare(view) {
     const available = (data.versions.cities || []).map(c => c.city).filter(c => CORPUS_MAP[c]);
     const cols = state.compareCities.map(city => {
-      const corpus = corpusOfCity(city);
-      if (!corpus) return { city, status: data.corpusStatus[CORPUS_MAP[city]] === 'loading' ? 'loading' : 'missing', articles: [] };
-      let pool = corpus.articles;
-      if (state.categoryId) pool = K.filterByCategory(pool, state.categoryId);
-      if (state.query) {
-        const res = K.search(corpus, state.query, { categoryId: state.categoryId, limit: 5 });
-        pool = res.results.map(r => corpus.articles.find(a => a.id === r.id)).filter(Boolean);
-      }
-      return { city, doc: corpus.doc, docId: CORPUS_MAP[city], status: 'ok',
-        articles: pool.slice(0, 5).map(a => Object.assign({}, a, { shots: shotsFor(CORPUS_MAP[city], a.pages) })) };
+      const corpora = corporaOfCity(city);
+      if (!corpora.length) return { city, status: corpusStateOfCity(city) === 'loading' ? 'loading' : 'missing', articles: [] };
+      const docName = corpora.map(c => c.doc).join('；');
+      let pool = [];
+      corpora.forEach(corpus => {
+        let p = corpus.articles;
+        if (state.categoryId) p = K.filterByCategory(p, state.categoryId);
+        if (state.query) {
+          const res = K.search(corpus, state.query, { categoryId: state.categoryId, limit: 5 });
+          p = res.results.map(r => corpus.articles.find(a => a.id === r.id)).filter(Boolean);
+        }
+        pool = pool.concat(p.map(a => Object.assign({}, a, { shots: shotsFor(corpus.doc_id, a.pages) })));
+      });
+      return { city, doc: docName, status: 'ok', articles: pool.slice(0, 5) };
     });
     R.compare(view, cols, available, state.compareCities, c => {
       const i = state.compareCities.indexOf(c);
       if (i >= 0) state.compareCities.splice(i, 1);
       else if (state.compareCities.length < 3) state.compareCities.push(c);
       else return;
-      const docId = CORPUS_MAP[c];
-      if (docId && !data.corpus[docId]) loadDoc(docId).then(renderAll);
+      (CORPUS_MAP[c] || []).forEach(id => { if (!data.corpus[id]) loadDoc(id).then(renderAll); });
       renderAll();
     }, state.compareExpanded, key => {
       state.compareExpanded = key;

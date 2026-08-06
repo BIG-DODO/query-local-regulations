@@ -150,6 +150,21 @@ DOCS = {
         "pattern": "tiao", "stop_marker": "附录"},
     "温州停车": {"doc_id": "wenzhou-parking-2024", "city": "温州", "doc": "温州市区建筑工程停车配建标准（2024）",
         "doc_version": "2024版", "pdf": "05浙江省/温州/温州市区建筑工程停车配建标准（2024）.pdf", "pattern": "numeric2", "stop_marker": "附录"},
+    # ---- 配套文件（文件族） ----
+    "上海面积规定": {"doc_id": "shanghai-area-calc", "city": "上海", "doc": "上海市建筑面积计算规划管理规定",
+        "doc_version": "沪规划资源建〔2021〕363号", "pdf": "06直辖市/上海/上海市建筑面积计算规划管理规定.pdf", "pattern": "tiao", "stop_marker": "附件"},
+    "上海应用解释": {"doc_id": "shanghai-appnote", "city": "上海", "doc": "《上海市城市规划管理技术规定》应用解释",
+        "doc_version": "现行", "pdf": "06直辖市/上海/《〈上海市城市规划管理技术规定〉应用解释》.pdf", "pattern": "tiao", "stop_marker": "附件"},
+    "济南停车2023": {"doc_id": "jinan-parking-2023", "city": "济南", "doc": "济南市城市建设项目停车设施配建要求",
+        "doc_version": "2023", "pdf": "04山东省/济南/2023城市建设项目停车设施配建要求.pdf", "pattern": "numeric2", "stop_marker": "附录"},
+    "无锡停车": {"doc_id": "wuxi-parking", "city": "无锡", "doc": "无锡市建设项目停车配建指标规定",
+        "doc_version": "现行", "pdf": "01江苏省/无锡/无锡市建设项目停车配建指标规定.pdf", "pattern": "numeric2", "stop_marker": "附录"},
+    "厦门停车2020": {"doc_id": "xiamen-parking-2020", "city": "厦门", "doc": "厦门市建设项目停车设施配建标准（2020版）",
+        "doc_version": "2020版", "pdf": "02福建省/厦门/厦门市建设项目停车设施配建标准（2020版）.pdf", "pattern": "tiao", "stop_marker": "附录"},
+    "南宁控规导则": {"doc_id": "nanning-guide-2025", "city": "南宁", "doc": "南宁市控制性详细规划技术导则",
+        "doc_version": "南自然资发〔2025〕691号", "pdf": "07其他省份省会城市/南宁/南宁控制性详细规划技术导则（印发稿）.pdf", "pattern": "numeric2", "stop_marker": "附录"},
+    "北京居住配置": {"doc_id": "beijing-jz2025-25", "city": "北京", "doc": "北京市居住公共服务设施配置指标",
+        "doc_version": "京政发〔2025〕25号", "pdf": "06直辖市/北京/北京市居住公共服务设施配置指标（京政发2025-25号）.pdf", "pattern": "numeric2", "stop_marker": "附录"},
 }
 
 TOC_DOTS = re.compile(r"\.{4,}|…{2,}|·{4,}")
@@ -226,6 +241,17 @@ def extract(key, with_shots=False):
     pdf_path = os.path.join(ROOT, cfg["pdf"])
 
     with pdfplumber.open(pdf_path) as pdf:
+        # 预扫描：该文档是否存在章标题（决定 tiao 模式是否启用前言门禁）
+        has_chapter = False
+        if "chapter" in pat:
+            for page in list(pdf.pages)[:20]:
+                for ln in clean_lines(page.extract_text(), cfg):
+                    if pat["chapter"].match(ln):
+                        has_chapter = True
+                        break
+                if has_chapter:
+                    break
+
         page_tables = {}
         for pno, page in enumerate(pdf.pages, start=1):
             try:
@@ -247,8 +273,8 @@ def extract(key, with_shots=False):
                     chapter = ln
                     section = ""
                     continue
-                if not chapter and cfg["pattern"] == "tiao":
-                    continue  # 前言丢弃（第一章之前）
+                if not chapter and cfg["pattern"] == "tiao" and has_chapter:
+                    continue  # 前言丢弃（第一章之前）；无章文件不启用门禁
                 if "section" in pat and pat["section"].match(ln):
                     section = ln
                     continue
