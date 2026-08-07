@@ -68,6 +68,10 @@ DOCS = {
         "doc_version": "莆自然资规〔2022〕3号", "src": ["任务09结果_莆田日照规则转写.md"],
         "chapter": r"^#\s+(.+)", "section": r"^##\s+(.+)", "article": r"^(\d+\.\d+(\.\d+)?)(?!\d)",
         "note": "RapidOCR 转写", "pdf_for_shots": "02福建省/莆田/《莆田市建筑工程日照分析技术管理规则》.pdf"},
+    "shanghai-appnote": {"city": "上海", "doc": "《上海市城市规划管理技术规定》应用解释",
+        "doc_version": "沪规法〔2007〕524号", "src": ["appnote_shanghai_转写.md"],
+        "chapter": r"^#\s+(.+)", "section": r"^$", "article": r"^(第[一二三四五六七八九十百零]+条\S{0,25})$",
+        "note": "kimi 视觉转写（期刊双栏扫描件，原文字层错乱已弃用）"},
 }
 
 RE_PAGE = re.compile(r"^\[\[page (\d+)\]\]")
